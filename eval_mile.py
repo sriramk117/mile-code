@@ -26,8 +26,8 @@ def eval(args):
         config = pickle.load(f)
 
     env_name = config['experiment']['env_name']
-    if env_name in ALL_V2_ENVIRONMENTS_GOAL_OBSERVABLE.keys():
-        env = ALL_V2_ENVIRONMENTS_GOAL_OBSERVABLE[env_name]()
+    if env_name+'-goal-observable' in ALL_V2_ENVIRONMENTS_GOAL_OBSERVABLE:
+        env = ALL_V2_ENVIRONMENTS_GOAL_OBSERVABLE[env_name+'-goal-observable']()
         env._freeze_rand_vec = False
         env = FrameStack(env, 4)
         env = FlattenObservation(env)

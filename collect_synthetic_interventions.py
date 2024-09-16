@@ -133,9 +133,9 @@ def main(args,
     env_name = args.env_name
     n_episodes = args.n_episodes
     
-    if env_name in ALL_V2_ENVIRONMENTS_GOAL_OBSERVABLE.keys():
+    if env_name+'-goal-observable' in ALL_V2_ENVIRONMENTS_GOAL_OBSERVABLE:
         assert isinstance(mental_model, policies.ActorCriticPolicy), 'Mental model must be continuous for this environment'
-        env = ALL_V2_ENVIRONMENTS_GOAL_OBSERVABLE[env_name]()
+        env = ALL_V2_ENVIRONMENTS_GOAL_OBSERVABLE[env_name+'-goal-observable']()
         env._freeze_rand_vec = False
         env = FrameStack(env, 4)
         env = FlattenObservation(env)
