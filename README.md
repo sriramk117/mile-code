@@ -4,7 +4,7 @@ Codebase to replicate the results for https://liralab.usc.edu/mile/.
 ## Setting up the environment
 - Create a new conda environment: `conda create -n mile python=3.10`
 - Install required packages: `pip install requirements.txt`
-- Install MILE `pip install -e .`
+- Install MILE: `pip install -e .`
 ## Dataset generation
 You can generate a synthetic dataset of interventions using our intervention model if you have a trained agent and mental model.
 
