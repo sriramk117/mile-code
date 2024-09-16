@@ -20,7 +20,7 @@ from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common import policies
 from stable_baselines3.common.distributions import TanhBijector
 
-from computational_model import computational_intervention_model, COST_LOOKUP
+from mile.computational_model import computational_intervention_model, COST_LOOKUP
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")   
 

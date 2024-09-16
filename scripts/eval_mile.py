@@ -14,7 +14,7 @@ from stable_baselines3.dqn.policies import QNetwork
 from stable_baselines3.common.policies import ActorCriticPolicy
 from stable_baselines3.common.monitor import Monitor
 
-from algorithm import generate_rollout
+from mile.algorithm import generate_rollout
 
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")

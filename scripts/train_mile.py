@@ -25,8 +25,8 @@ from imitation.util.logger import HierarchicalLogger, _build_output_formats
 from imitation.policies.base import NormalizeFeaturesExtractor
 from imitation.util.networks import RunningNorm
 
-from utils import prepare_dataset, read_config, DictDataset, Logger, log_to_file
-from algorithm import InterventionTrainer
+from mile.utils import prepare_dataset, read_config, DictDataset, Logger, log_to_file
+from mile.algorithm import InterventionTrainer
 from collect_synthetic_interventions import collect_synthetic_data
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")

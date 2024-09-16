@@ -19,8 +19,8 @@ from stable_baselines3.common.monitor import Monitor
 
 from imitation.util import util
 
-from utils import Logger, ContInterventionMetrics, DiscInterventionMetrics
-from computational_model import computational_intervention_model, sum_independent_dims, COST_LOOKUP
+from mile.utils import Logger, ContInterventionMetrics, DiscInterventionMetrics
+from mile.computational_model import computational_intervention_model, sum_independent_dims, COST_LOOKUP
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 rand = np.random.randint(0, 1000)   
