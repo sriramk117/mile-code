@@ -18,6 +18,8 @@ python collect_synthetic_interventions.py \
 --save_path 'path_to_save' 
 ```
 
+In order to pretrain the agent and the mental model, you can follow [SB3](https://stable-baselines3.readthedocs.io/en/master/guide/quickstart.html) and [Imitation](https://imitation.readthedocs.io/en/latest/tutorials/1_train_bc.html) documents.
+
 ## Training MILE
 ```
 python train_mile.py --config 'config.json'
