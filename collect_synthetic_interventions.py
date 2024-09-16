@@ -177,7 +177,7 @@ def main(args,
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--env_name', type=str, default='peg-insert-side-v2-goal-observable')
+    parser.add_argument('--env_name', type=str, default='peg-insert-side-v2')
     parser.add_argument('--n_episodes', type=int, default=20)
     parser.add_argument('--rollout_policy', type=str, default='./initial_policy', help='Path to the rollout policy')
     parser.add_argument('--intervention_policy', type=str, default='./expert_policy', help='Path to the expert policy')
