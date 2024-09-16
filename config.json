@@ -1,0 +1,49 @@
+{
+    "train":{
+        "num_epochs": 300,
+        "batch_size": 100000,
+        "lr": 0.0005,
+        "lambda1": 1.0,
+        "lambda2": 1.0
+    },
+    "experiment": {
+        "name": "mile",
+        "mode": "iterative",
+        "validate": {
+            "enabled": true,
+            "every_n_epochs": 100
+        },
+        "logging": {
+            "terminal_output_to_txt": false,
+            "log_tb": false,
+            "log_wandb": true
+        },
+        "save": {
+            "enabled": false,
+            "every_n_epochs": 100,
+            "on_best_validation": false,
+            "on_best_rollout_return": false,
+            "on_best_rollout_success_rate": true,
+            "outdir": "path"
+        },
+        "rollout": {
+            "enabled": true,
+            "n_episodes": 30,
+            "every_n_epochs": 100
+        },
+        "env_name": "drawer-open-v2-goal-observable",
+        "dataset_path": "./intervention_dataset.pkl",
+        "policy_type": "sac",
+        "policy_path": "./initial_policy",
+        "mental_model_type": "bc",
+        "gt_mental_model_path": "./gt_mental_model",
+        "intervention_policy_path": "./expert_policy",
+        "use_warm_start": true,
+        "warm_start_path": "./warm_started_mental_model",
+        "num_rounds": 20,
+        "episodes_per_round": 1,
+        "include_offline_dataset": false,
+        "offline_dataset_path": "./offline_dataset.pkl"
+    }
+}
+    

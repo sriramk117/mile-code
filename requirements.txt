@@ -1,0 +1,7 @@
+gymnasium
+numpy
+wandb
+torch
+stable-baselines3
+imitation
+git+https://github.com/Farama-Foundation/Metaworld.git@master#egg=metaworld
