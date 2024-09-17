@@ -21,6 +21,14 @@ python scripts/collect_synthetic_interventions.py \
 In order to pretrain the agent and the mental model, you can follow [SB3](https://stable-baselines3.readthedocs.io/en/master/guide/quickstart.html) and [Imitation](https://imitation.readthedocs.io/en/latest/tutorials/1_train_bc.html) documents.
 
 ## Training MILE
+To reproduce results for Peg-Insert environment, download the pretrained models (using this drive [link](https://drive.google.com/file/d/1bzKGyOmX1ZCmAWnZiq_sAFRxi3AXvm4t/view?usp=drive_link) or via terminal) and extract the downloaded .zip file. 
+
+```
+gdown 1bzKGyOmX1ZCmAWnZiq_sAFRxi3AXvm4t 
+unzip trained_models.zip
+```
+
+Then run `train_mile.py` with the default `config.json` file. 
 ```
 python scripts/train_mile.py --config 'config.json'
 ```
