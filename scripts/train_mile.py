@@ -177,6 +177,7 @@ def iterative_training(config):
     print(config)
     now = datetime.datetime.now()
     timestamp = now.strftime("%Y-%m-%d-%H-%M-%S-%f")
+    EXPERIMENT_NAME = config['experiment']['name']+'-'+timestamp
     format_strs = ["stdout"]
     if config['experiment']['logging']['terminal_output_to_txt']:
         format_strs.append("log")
@@ -184,7 +185,6 @@ def iterative_training(config):
         format_strs.append("tensorboard")
     if config['experiment']['logging']['log_wandb']:
         format_strs.append("wandb")
-        EXPERIMENT_NAME = config['experiment']['name']+'-'+timestamp
         run = wandb.init(project=config['experiment']['name'], name=EXPERIMENT_NAME)
     tempdir = util.parse_path(tempfile.gettempdir())
     folder = tempdir / timestamp
@@ -226,7 +226,7 @@ def iterative_training(config):
                     done=[])
 
     for round in range(num_rounds):
-        log_to_file('Round: {}'.format(round), 'EXPERIMENT_NAME'+'_log.txt')
+        log_to_file('Round: {}'.format(round), EXPERIMENT_NAME+'_log.txt')
         print('Collecting intervention data...')
         additional_data, mean_score, mean_success_rate = collect_synthetic_data(env=env,
                                                                                 n_episodes=episodes_per_round,
@@ -261,7 +261,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     config = read_config(args.config)
     if config['experiment']['save']['enabled']:
-        os.mkdir(config['experiment']['save']['outdir'], exist_ok=True)
+        os.makedirs(config['experiment']['save']['outdir'], exist_ok=True)
 
     if config['experiment']['mode'] == 'offline':
         offline_training(config)

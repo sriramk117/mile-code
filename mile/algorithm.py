@@ -341,11 +341,11 @@ class InterventionTrainer:
                         best_policy = deepcopy(self.policy)
                         best_mental_model = deepcopy(self.mental_model)
     
-            if self.experiment_config['save']['enabled']:
+            if self.experiment_config['save']['enabled'] and self.experiment_config['save']['every_n_epochs'] > 0:
                 save_every = self.experiment_config['save']['every_n_epochs']
                 if epoch % save_every == 0:
-                    util.save_policy(self.policy, self.experiment_config['save']['outdir']+f'/policy_{epoch}')
-                    util.save_policy(self.mental_model, self.experiment_config['save']['outdir']+f'/mental_model_{epoch}')
+                    self.policy.save(self.experiment_config['save']['outdir']+f'/policy_{epoch}')
+                    self.mental_model.save(self.experiment_config['save']['outdir']+f'/mental_model_{epoch}')
 
             epoch_number = round*self.num_epochs + epoch if round is not None else epoch
             self.logger.log_epoch_metrics(epoch_number=epoch_number,
@@ -356,10 +356,10 @@ class InterventionTrainer:
                                         )
 
         if self.experiment_config['save']['enabled']:
-            util.save_policy(self.policy, self.experiment_config['save']['outdir']+'/policy')
-            util.save_policy(self.mental_model, self.experiment_config['save']['outdir']+'/mental_model')
+            self.policy.save(self.experiment_config['save']['outdir']+'/policy')
+            self.mental_model.save(self.experiment_config['save']['outdir']+'/mental_model')
             if self.experiment_config['save']['on_best_rollout_success_rate']:
-                util.save_policy(best_policy, self.experiment_config['save']['outdir']+'/best_policy')
-                util.save_policy(best_mental_model, self.experiment_config['save']['outdir']+'/best_mental_model')
+                best_policy.save(self.experiment_config['save']['outdir']+'/best_policy')
+                best_mental_model.save(self.experiment_config['save']['outdir']+'/best_mental_model')
             with open(self.experiment_config['save']['outdir']+'/config.pkl', 'wb') as f:
                 pickle.dump(self.config, f)

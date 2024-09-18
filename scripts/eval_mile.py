@@ -6,6 +6,7 @@ import pickle
 import numpy as np
 from collections import deque
 import argparse
+import os
 
 import torch
 
@@ -21,6 +22,9 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 rand = np.random.randint(0, 1000)   
 
 def eval(args):
+    if not os.path.isdir(args.trained_model):
+        print(f"Error: {args.trained_model} is not a directory.")
+        return
     config_file = args.trained_model + '/config.pkl'
     with open(config_file, 'rb') as f:
         config = pickle.load(f)
@@ -37,13 +41,13 @@ def eval(args):
     env.reset()
 
     if config['experiment']['policy_type'] == 'sac':
-        policy = SACPolicy
+        policy_cls = SACPolicy
     elif config['experiment']['policy_type'] == 'qnetwork':
-        policy = QNetwork
+        policy_cls = QNetwork
     elif config['experiment']['policy_type'] == 'bc':
-        policy = ActorCriticPolicy
+        policy_cls = ActorCriticPolicy
 
-    policy = policy.load(args.trained_model + '/policy')
+    policy = policy_cls.load(args.trained_model + '/policy')
     policy = policy.eval()
 
     score_window = deque(maxlen=100)

@@ -19,12 +19,12 @@
             "log_wandb": true
         },
         "save": {
-            "enabled": false,
-            "every_n_epochs": 100,
+            "enabled": true,
+            "every_n_epochs": 0,
             "on_best_validation": false,
             "on_best_rollout_return": false,
             "on_best_rollout_success_rate": true,
-            "outdir": "output_path"
+            "outdir": "output_dir"
         },
         "rollout": {
             "enabled": true,

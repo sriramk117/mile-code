@@ -5,3 +5,5 @@ __pycache__/
 *.txt
 *.png
 *.egg-info
+wandb/
+logs/

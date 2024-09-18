@@ -59,6 +59,7 @@ def read_config(file_path:str):
     return config
 
 def log_to_file(sentence:str, filename:str):
+    os.makedirs('logs', exist_ok=True)
     filename = 'logs/' + filename
     print(sentence)
     # create the file if it does not exist
