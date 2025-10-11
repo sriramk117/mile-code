@@ -3,7 +3,7 @@ Codebase to replicate the results for https://liralab.usc.edu/mile/.
 
 ## Setting up the environment
 - Create a new conda environment: `conda create -n mile python=3.10`
-- Activate conda environment: `conda activate`
+- Activate conda environment: `conda activate mile`
 - Install required packages: `pip install -r requirements.txt`
 - Install [Metaworld](https://github.com/Farama-Foundation/Metaworld): `pip install git+https://github.com/Farama-Foundation/Metaworld.git@v2.0.0`
 - Install MILE: `pip install -e .`
