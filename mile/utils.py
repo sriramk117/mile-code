@@ -7,7 +7,7 @@ from typing import Any, Callable, List, Mapping, Optional, Sequence, Tuple, Unio
 import torch
 from torch.utils.data import Dataset, DataLoader
 
-from imitation.util import logger as imit_logger
+from imitation.logger import HierarchicalLogger
 
 class DictDataset(Dataset):
     def __init__(self, dataset: dict):
@@ -107,7 +107,7 @@ class DiscInterventionMetrics:
 
 
 class Logger:
-    def __init__(self, logger: imit_logger.HierarchicalLogger):
+    def __init__(self, logger: HierarchicalLogger):
         """Create new logger.
 
         Args:

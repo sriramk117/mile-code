@@ -3,4 +3,3 @@ numpy
 wandb
 torch
 stable-baselines3<=2.3.2
-imitation

@@ -17,13 +17,11 @@ from stable_baselines3.common import policies
 from stable_baselines3.common.distributions import TanhBijector
 from stable_baselines3.common.monitor import Monitor
 
-from imitation.util import util
-
 from mile.utils import Logger, ContInterventionMetrics, DiscInterventionMetrics
 from mile.computational_model import computational_intervention_model, sum_independent_dims, COST_LOOKUP
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-rand = np.random.randint(0, 1000)   
+rand = np.random.randint(0, 1000)
 
 
 def generate_rollout(agent: Union[SACPolicy, policies.ActorCriticPolicy, QNetwork], 

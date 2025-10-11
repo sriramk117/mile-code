@@ -21,9 +21,9 @@ import stable_baselines3.common.logger as sb_logger
 from stable_baselines3.common.utils import get_schedule_fn
 
 from imitation.util import util
-from imitation.util.logger import HierarchicalLogger, _build_output_formats
-from imitation.policies.base import NormalizeFeaturesExtractor
-from imitation.util.networks import RunningNorm
+from imitation.logger import HierarchicalLogger, _build_output_formats
+from imitation.base import NormalizeFeaturesExtractor
+from imitation.networks import RunningNorm
 
 from mile.utils import prepare_dataset, read_config, DictDataset, Logger, log_to_file
 from mile.algorithm import InterventionTrainer
