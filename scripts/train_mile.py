@@ -1,6 +1,6 @@
 import gymnasium as gym
-from gymnasium.wrappers import FrameStack, FlattenObservation
-from metaworld.envs import ALL_V3_ENVIRONMENTS_GOAL_OBSERVABLE, ALL_V3_ENVIRONMENTS_GOAL_HIDDEN # type: ignore
+from gymnasium.wrappers import FrameStackObservation, FlattenObservation
+from metaworld.env_dict import ALL_V3_ENVIRONMENTS_GOAL_OBSERVABLE, ALL_V3_ENVIRONMENTS_GOAL_HIDDEN # type: ignore
 
 import pickle
 import numpy as np
@@ -21,9 +21,10 @@ import stable_baselines3.common.logger as sb_logger
 from stable_baselines3.common.utils import get_schedule_fn
 
 from imitation.util import util
-from imitation.logger import HierarchicalLogger, _build_output_formats
-from imitation.base import NormalizeFeaturesExtractor
-from imitation.networks import RunningNorm
+from imitation.util.logger import HierarchicalLogger, _build_output_formats
+from imitation.util.networks import RunningNorm
+
+from imitation.policies.base import NormalizeFeaturesExtractor
 
 from mile.utils import prepare_dataset, read_config, DictDataset, Logger, log_to_file
 from mile.algorithm import InterventionTrainer
@@ -38,7 +39,7 @@ def offline_training(config):
     if env_name+'-goal-observable' in ALL_V3_ENVIRONMENTS_GOAL_OBSERVABLE:
         env = ALL_V3_ENVIRONMENTS_GOAL_OBSERVABLE[env_name+'-goal-observable']()
         env._freeze_rand_vec = False
-        env = FrameStack(env, 4)
+        env = FrameStackObservation(env, 4)
         env = FlattenObservation(env)
     else:
         env = gym.make(env_name)
@@ -123,7 +124,7 @@ def iterative_training(config):
     if env_name+'-goal-observable' in ALL_V3_ENVIRONMENTS_GOAL_OBSERVABLE:
         env = ALL_V3_ENVIRONMENTS_GOAL_OBSERVABLE[env_name+'-goal-observable']()
         env._freeze_rand_vec = False
-        env = FrameStack(env, 4)
+        env = FrameStackObservation(env, 4)
         env = FlattenObservation(env)
     else:
         env = gym.make(env_name)

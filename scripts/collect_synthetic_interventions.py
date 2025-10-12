@@ -4,15 +4,15 @@ import argparse
 from typing import Any, Callable, List, Mapping, Optional, Sequence, Tuple, Union
 
 import gymnasium as gym
-from gymnasium.wrappers.frame_stack import FrameStack
-from gymnasium.wrappers.flatten_observation import FlattenObservation
+from gymnasium.wrappers import FrameStackObservation
+from gymnasium.wrappers import FlattenObservation
 
 import torch
 import torch.distributions as D
 
 from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.distributions import TanhBijector
-from metaworld.envs import ALL_V3_ENVIRONMENTS_GOAL_OBSERVABLE, ALL_V3_ENVIRONMENTS_GOAL_HIDDEN # type: ignore
+from metaworld.env_dict import ALL_V3_ENVIRONMENTS_GOAL_OBSERVABLE, ALL_V3_ENVIRONMENTS_GOAL_HIDDEN # type: ignore
 
 from stable_baselines3.sac.policies import SACPolicy
 from stable_baselines3.dqn.policies import QNetwork
@@ -137,7 +137,7 @@ def main(args,
         assert isinstance(mental_model, policies.ActorCriticPolicy), 'Mental model must be continuous for this environment'
         env = ALL_V3_ENVIRONMENTS_GOAL_OBSERVABLE[env_name+'-goal-observable']()
         env._freeze_rand_vec = False
-        env = FrameStack(env, 4)
+        env = FrameStackObservation(env, 4)
         env = FlattenObservation(env)
     else:
         assert isinstance(mental_model, QNetwork), 'Mental model must be discrete for this environment'

@@ -11,7 +11,7 @@ from stable_baselines3.sac import policies as sac_policies
 from torch import nn
 
 from imitation import types
-from imitation import networks
+from imitation.util import networks
 
 
 class NonTrainablePolicy(policies.BasePolicy, abc.ABC):

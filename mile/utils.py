@@ -7,7 +7,7 @@ from typing import Any, Callable, List, Mapping, Optional, Sequence, Tuple, Unio
 import torch
 from torch.utils.data import Dataset, DataLoader
 
-from imitation.logger import HierarchicalLogger
+from imitation.util.logger import HierarchicalLogger
 
 class DictDataset(Dataset):
     def __init__(self, dataset: dict):

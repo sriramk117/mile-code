@@ -1,6 +1,6 @@
 import gymnasium as gym
-from gymnasium.wrappers import FrameStack, FlattenObservation
-from metaworld.envs import ALL_V3_ENVIRONMENTS_GOAL_OBSERVABLE, ALL_V3_ENVIRONMENTS_GOAL_HIDDEN # type: ignore
+from gymnasium.wrappers import FrameStackObservation, FlattenObservation
+from metaworld.env_dict import ALL_V3_ENVIRONMENTS_GOAL_OBSERVABLE, ALL_V3_ENVIRONMENTS_GOAL_HIDDEN # type: ignore
 
 import pickle
 import numpy as np
@@ -34,7 +34,7 @@ def eval(args):
         env = ALL_V3_ENVIRONMENTS_GOAL_OBSERVABLE[env_name+'-goal-observable']()
         env.reward_function_version = "v2" # Use the reward function from v2
         env._freeze_rand_vec = False
-        env = FrameStack(env, 4)
+        env = FrameStackObservation(env, 4)
         env = FlattenObservation(env)
     else:
         env = gym.make(env_name)
