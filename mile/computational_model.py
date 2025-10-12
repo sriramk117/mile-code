@@ -12,11 +12,11 @@ from stable_baselines3.common.policies import ActorCriticPolicy
 
 
 COST_LOOKUP = {    
-    'button-press-v2': [150, 200.0],
-    'peg-insert-side-v2': [75, 175.0],
-    'pick-place-v2': [250, 200.0],
-    'drawer-open-v2': [60, 75.0],
-    'LunarLander-v2': [3, 1.0],
+    'button-press-v3': [150, 200.0],
+    'peg-insert-side-v3': [75, 175.0],
+    'pick-place-v3': [250, 200.0],
+    'drawer-open-v3': [60, 75.0],
+    'LunarLander-v3': [3, 1.0],
 }
 LOG_STD_MAX = 2
 LOG_STD_MIN = -20

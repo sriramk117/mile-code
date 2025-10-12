@@ -1,5 +1,6 @@
-gymnasium==0.29.1
+gymnasium
 numpy
 wandb
 torch
-stable-baselines3<=2.3.2
+stable-baselines3
+metaworld==3.0.0

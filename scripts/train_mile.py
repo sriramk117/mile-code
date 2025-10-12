@@ -1,6 +1,6 @@
 import gymnasium as gym
 from gymnasium.wrappers import FrameStack, FlattenObservation
-from metaworld.envs import ALL_V2_ENVIRONMENTS_GOAL_OBSERVABLE, ALL_V2_ENVIRONMENTS_GOAL_HIDDEN # type: ignore
+from metaworld.envs import ALL_V3_ENVIRONMENTS_GOAL_OBSERVABLE, ALL_V3_ENVIRONMENTS_GOAL_HIDDEN # type: ignore
 
 import pickle
 import numpy as np
@@ -35,8 +35,8 @@ rand = np.random.randint(0, 1000)
 
 def offline_training(config):
     env_name = config['experiment']['env_name']
-    if env_name+'-goal-observable' in ALL_V2_ENVIRONMENTS_GOAL_OBSERVABLE:
-        env = ALL_V2_ENVIRONMENTS_GOAL_OBSERVABLE[env_name+'-goal-observable']()
+    if env_name+'-goal-observable' in ALL_V3_ENVIRONMENTS_GOAL_OBSERVABLE:
+        env = ALL_V3_ENVIRONMENTS_GOAL_OBSERVABLE[env_name+'-goal-observable']()
         env._freeze_rand_vec = False
         env = FrameStack(env, 4)
         env = FlattenObservation(env)
@@ -120,8 +120,8 @@ def iterative_training(config):
     episodes_per_round = config['experiment']['episodes_per_round']
 
     env_name = config['experiment']['env_name']
-    if env_name+'-goal-observable' in ALL_V2_ENVIRONMENTS_GOAL_OBSERVABLE:
-        env = ALL_V2_ENVIRONMENTS_GOAL_OBSERVABLE[env_name+'-goal-observable']()
+    if env_name+'-goal-observable' in ALL_V3_ENVIRONMENTS_GOAL_OBSERVABLE:
+        env = ALL_V3_ENVIRONMENTS_GOAL_OBSERVABLE[env_name+'-goal-observable']()
         env._freeze_rand_vec = False
         env = FrameStack(env, 4)
         env = FlattenObservation(env)

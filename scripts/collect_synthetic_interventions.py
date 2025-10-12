@@ -12,7 +12,7 @@ import torch.distributions as D
 
 from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.distributions import TanhBijector
-from metaworld.envs import ALL_V2_ENVIRONMENTS_GOAL_OBSERVABLE, ALL_V2_ENVIRONMENTS_GOAL_HIDDEN # type: ignore
+from metaworld.envs import ALL_V3_ENVIRONMENTS_GOAL_OBSERVABLE, ALL_V3_ENVIRONMENTS_GOAL_HIDDEN # type: ignore
 
 from stable_baselines3.sac.policies import SACPolicy
 from stable_baselines3.dqn.policies import QNetwork
@@ -133,9 +133,9 @@ def main(args,
     env_name = args.env_name
     n_episodes = args.n_episodes
     
-    if env_name+'-goal-observable' in ALL_V2_ENVIRONMENTS_GOAL_OBSERVABLE:
+    if env_name+'-goal-observable' in ALL_V3_ENVIRONMENTS_GOAL_OBSERVABLE:
         assert isinstance(mental_model, policies.ActorCriticPolicy), 'Mental model must be continuous for this environment'
-        env = ALL_V2_ENVIRONMENTS_GOAL_OBSERVABLE[env_name+'-goal-observable']()
+        env = ALL_V3_ENVIRONMENTS_GOAL_OBSERVABLE[env_name+'-goal-observable']()
         env._freeze_rand_vec = False
         env = FrameStack(env, 4)
         env = FlattenObservation(env)
