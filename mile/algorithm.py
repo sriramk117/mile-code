@@ -38,12 +38,16 @@ def generate_rollout(agent: Union[SACPolicy, policies.ActorCriticPolicy, QNetwor
     
     agent.set_training_mode(False)
     if with_intervention:
+        # Check intervention policy and mental model are provided
         assert intervention_policy is not None, 'Intervention policy is not provided'
         assert mental_model is not None, 'Mental model is not provided'
         intervention_policy.set_training_mode(False)
         mental_model.set_training_mode(False)
         if env_name not in COST_LOOKUP:
             raise ValueError(f'Cost lookup for {env_name} is not available, please add it to COST_LOOKUP')
+        
+        # Determine c value and cdf scale from hard-coded lookup 
+        # table given environment
         cost = COST_LOOKUP[env_name][0]
         cdf_scale = COST_LOOKUP[env_name][1]
     with torch.no_grad():
@@ -53,8 +57,10 @@ def generate_rollout(agent: Union[SACPolicy, policies.ActorCriticPolicy, QNetwor
             score = 0
             success = 0
             for t in range(max_t):
+                # Rollout action from agent deterministically at current state
                 rollout_action, _ = agent.predict(state, deterministic=True)
                 if with_intervention:
+                    # If continuous action space
                     if isinstance(env.action_space, gym.spaces.Box):
                         final_mu, final_log_std, intervention_prob, _, _ = computational_intervention_model(state=torch.from_numpy(state).float().to(device),
                                                                                                             mental_model=mental_model,
@@ -73,16 +79,28 @@ def generate_rollout(agent: Union[SACPolicy, policies.ActorCriticPolicy, QNetwor
                             if isinstance(agent, SACPolicy):
                                 rollout_action = TanhBijector.inverse(torch.from_numpy(rollout_action)).numpy()
                             action = rollout_action
+                            
+                    # If discrete action space
                     elif isinstance(env.action_space, gym.spaces.Discrete):
+                        # Determine probability of actions with intervention 
+                        # and intervention probability using computational 
+                        # model
                         final_prob, intervention_prob = computational_intervention_model(state=torch.from_numpy(state).float().to(device),
                                                                                            mental_model=mental_model,
                                                                                            policy=intervention_policy,
                                                                                            cost=cost,
                                                                                            cdf_scale=cdf_scale)
+                        # Determine the action with the highest probability
+                        # from the computational intervention model and 
+                        # call it the human action
                         human_action = final_prob.argmax().item()
                         if rollout_action == human_action or human_action == env.action_space.n:
+                            # If the robot's action is the same as the human 
+                            # model's action, or if the human model chooses
+                            # not to intervene, use the robot's action
                             action = rollout_action
                         else:
+                            # Else, use the human model's action
                             action = human_action
                 else:
                     if isinstance(agent, SACPolicy):
@@ -106,7 +124,11 @@ def generate_rollout(agent: Union[SACPolicy, policies.ActorCriticPolicy, QNetwor
 def mile_disc_loss_fn(pred_probs: torch.Tensor, 
                       gt_labels: torch.Tensor, 
                       reduction='mean'):
+    # Discrete loss function for intervention model defined in the paper
     pred_probs = torch.clamp(pred_probs, 1e-7, 1 - 1e-7)
+
+    # Average negative log likelihood loss of predicted probabilities
+    # with respect to the ground truth labels across the batch
     loss = F.nll_loss(torch.log(pred_probs), gt_labels, reduction=reduction)
     return loss
 
@@ -194,6 +216,7 @@ class InterventionTrainer:
         for batch_num, batch in enumerate(dataloader):
             self.optimizer.zero_grad()
             state = batch['state'].float().to(device)
+            # If the environment has continuous action space
             if isinstance(self.env.action_space, gym.spaces.Box):
                 intervention_prob = batch['intervention_prob'].float().to(device)
                 ground_truth_action = batch['action'].float().to(device)
@@ -228,19 +251,26 @@ class InterventionTrainer:
                                       batch_size=self.batch_size,
                                       training_metrics=training_metrics,
                                     )
-
+                
+            # If the environment has discrete action space
             elif isinstance(self.env.action_space, gym.spaces.Discrete):
+                # Get the human action from the batch
                 human_action = batch['human_action'].long().to(device)
+
+                # Compute the intervention probability and final action
+                # probabilities using the computational intervention model
                 final_prob, intervention_prob = computational_intervention_model(state=state,
                                                                                         mental_model=self.mental_model,
                                                                                         policy=self.policy,
                                                                                         cost=self.intervention_cost,
                                                                                         cdf_scale=self.intervention_scale)
+                # Apply loss function for discrete action space
                 loss = self.loss_fn(final_prob, human_action)
                 loss.backward()
                 self.optimizer.step()
                 total_loss += loss.item()
 
+                # Logging
                 training_metrics = DiscInterventionMetrics(
                                         total_loss=loss.item(),
                                     )
@@ -300,12 +330,17 @@ class InterventionTrainer:
                                         )
 
                 elif isinstance(self.env.action_space, gym.spaces.Discrete):
+                    # Get the human actions from the batch
                     human_action = batch['human_action'].long().to(device)
+
+                    # Compute the intervention probability and final action 
+                    # probability using the computational intervention model
                     final_prob, intervention_prob = computational_intervention_model(state=state,
                                                                                     mental_model=self.mental_model,
                                                                                     policy=self.policy,
                                                                                     cost=self.intervention_cost,
                                                                                     cdf_scale=self.intervention_scale)
+                    # Calculate loss
                     loss = self.loss_fn(final_prob, human_action)
                     total_loss += loss.item()
 

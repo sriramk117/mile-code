@@ -11,6 +11,8 @@ from stable_baselines3.dqn.policies import QNetwork
 from stable_baselines3.common.policies import ActorCriticPolicy
 
 
+# Define a hard-coded cost lookup table for different environments
+# Format: 'env_name': [cost, cdf_scale]
 COST_LOOKUP = {    
     'button-press-v3': [150, 200.0],
     'peg-insert-side-v3': [75, 175.0],
@@ -52,11 +54,14 @@ def monte_carlo_samples(state: torch.Tensor,
         samples: samples from the distribution (num_samples, batch_size, action_size) or (num_samples, action_size)
     '''
     if isinstance(policy, SACPolicy):
+        # Get q function distribution from actor network
         mu, log_std, _ = policy.actor.get_action_dist_params(state)
         dist = D.Normal(mu, log_std.exp())
     elif isinstance(policy, ActorCriticPolicy):
+        # Get q function distribution from policy
         dist = policy.get_distribution(state)
         dist = dist.distribution
+    # Randomly sample actions from the distribution
     samples = dist.rsample((num_samples,))
     return samples
 
@@ -81,21 +86,35 @@ def computational_intervention_model(state: torch.Tensor,
 
     # Discrete environment
     if isinstance(policy.action_space, gym.spaces.Discrete):
+        # Ensure mental model and policy are discrete QNetworks
         assert isinstance(mental_model, QNetwork), "Mental model should be Discrete"
         assert isinstance(policy, QNetwork), "Policy should be Discrete"
+
+        # Obtain expected action probabilities from the trained mental model
         mental_model_expected_action_probs = mental_model(state)
         if len(mental_model_expected_action_probs.shape) == 1:
             mental_model_expected_action_probs = mental_model_expected_action_probs.unsqueeze(0)
+
+        # Normalize the mental model's predicted action probabilities
         mental_model_expected_action_probs = F.softmax(mental_model_expected_action_probs, dim=1)
+
+        # Obtain the policy's expected action probabilities
         policy_expected_action_probs = policy(state)
         if len(policy_expected_action_probs.shape) == 1:
             policy_expected_action_probs = policy_expected_action_probs.unsqueeze(0)
+
+        # Normalize the policy's predicted action probabilities
         policy_expected_action_probs = F.softmax(policy_expected_action_probs, dim=1)
         mean = torch.tensor([0.0], device=state.device)
         std_dev = torch.tensor([1.0], device=state.device)
-        inside_cdf = (mental_model_expected_action_probs * torch.log(policy_expected_action_probs)).sum(dim=1)
+
+        # Computes p(v = 1 | a_h - a, s) where v is the intervention variable 
+        # and a_h is the nominal action of the human
+        inside_cdf = (mental_model_expected_action_probs * torch.log(policy_expected_action_probs)).sum(dim=1) # computes cross-entropy H(mental_model, policy)
         inside_cdf = policy_expected_action_probs - inside_cdf
         inside_cdf = inside_cdf - cost
+
+        # Compute intervention probability
         intervention_prob = (policy_expected_action_probs * torch.distributions.Normal(mean, std_dev).cdf(inside_cdf)).sum(dim=1)
         total_prob = torch.ones((policy_expected_action_probs.shape[0],policy_expected_action_probs.shape[1]+1), device=state.device)
         total_prob[:,:-1] = policy_expected_action_probs*intervention_prob.unsqueeze(1)
@@ -132,6 +151,7 @@ def computational_intervention_model(state: torch.Tensor,
     
 
 def random_intervention(intervention_rate=0.1):
+    # Randomly decide whether to intervene based on a given intervention rate
     intervention = np.random.choice([0, 1], p=[1-intervention_rate, intervention_rate])
     intervention = bool(intervention)
     return intervention
