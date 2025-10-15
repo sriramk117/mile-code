@@ -108,14 +108,19 @@ def computational_intervention_model(state: torch.Tensor,
         mean = torch.tensor([0.0], device=state.device)
         std_dev = torch.tensor([1.0], device=state.device)
 
-        # Computes p(v = 1 | a_h - a, s) where v is the intervention variable 
+        # Computes p(v = 1 | a_h = a, s) where v is the intervention variable 
         # and a_h is the nominal action of the human
-        inside_cdf = (mental_model_expected_action_probs * torch.log(policy_expected_action_probs)).sum(dim=1) # computes cross-entropy H(mental_model, policy)
+        # inside_cdf = (mental_model_expected_action_probs * torch.log(policy_expected_action_probs)).sum(dim=1, keepdim=True) # computes cross-entropy H(mental_model, policy)
+        # inside_cdf = torch.log(policy_expected_action_probs) - inside_cdf
+        # inside_cdf = inside_cdf - cost
+        inside_cdf = (mental_model_expected_action_probs * torch.log(policy_expected_action_probs)).sum(dim=1) 
         inside_cdf = policy_expected_action_probs - inside_cdf
         inside_cdf = inside_cdf - cost
 
         # Compute intervention probability
         intervention_prob = (policy_expected_action_probs * torch.distributions.Normal(mean, std_dev).cdf(inside_cdf)).sum(dim=1)
+        
+        # Model how the humans would intervene when they do 
         total_prob = torch.ones((policy_expected_action_probs.shape[0],policy_expected_action_probs.shape[1]+1), device=state.device)
         total_prob[:,:-1] = policy_expected_action_probs*intervention_prob.unsqueeze(1)
         total_prob[:,-1] = 1 - torch.sum(total_prob[:,:-1], dim=1)

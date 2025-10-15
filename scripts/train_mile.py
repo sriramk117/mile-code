@@ -239,6 +239,8 @@ def iterative_training(config):
         log_to_file('Dataset size: {}'.format(len(additional_data['state'])), EXPERIMENT_NAME+'_log.txt')
         log_to_file(f"Percentage of no-intervention: {additional_data['intervention'].count(0)/len(additional_data['intervention'])}", EXPERIMENT_NAME+'_log.txt')
         log_to_file(f"Success rate: {mean_success_rate}", EXPERIMENT_NAME+'_log.txt')
+        log_to_file(f"Number of interventions: {additional_data['intervention'].count(1)}", EXPERIMENT_NAME+'_log.txt')
+        logger.log_interventions(additional_data['intervention'].count(1))
         for key in dataset.keys():
             if round == 0:
                 dataset[key].extend(additional_data[key])

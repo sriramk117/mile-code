@@ -172,6 +172,13 @@ class Logger:
         self._logger.dump(self._tensorboard_step)
         self._tensorboard_step += 1
 
+    def log_interventions(
+        self,
+        num_interventions: int,
+    ):
+        if num_interventions is not None:
+            self._logger.record("mile/interventions", num_interventions)
+
     def log_epoch_metrics(
         self,
         epoch_number: int,
