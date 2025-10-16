@@ -174,10 +174,10 @@ class Logger:
 
     def log_interventions(
         self,
-        num_interventions: int,
+        intervention_rate: int,
     ):
-        if num_interventions is not None:
-            self._logger.record("mile/interventions", num_interventions)
+        if intervention_rate is not None:
+            self._logger.record("mile/interventions", intervention_rate)
 
     def log_epoch_metrics(
         self,
