@@ -138,8 +138,34 @@ def iterative_training(config):
         intervention_policy = SACPolicy.load(config['experiment']['intervention_policy_path'])
         intervention_policy.eval()
     elif config['experiment']['policy_type'] == 'qnetwork':
-        policy = QNetwork.load(config['experiment']['policy_path'])
-        intervention_policy = QNetwork.load(config['experiment']['intervention_policy_path'])
+        # Check if the provided policy paths lead to valid QNetwork policies otherwise
+        # initialize randomized QNetworks
+        if 'policy_path' in config['experiment'] and config['experiment']['policy_path'] is not None:
+            try:
+                policy = DQNPolicy.load(config['experiment']['policy_path']).q_net
+            except Exception as e:
+                print(f"Failed to load policy: {e}")
+                policy = DQNPolicy(observation_space=env.observation_space,
+                                   action_space=env.action_space,
+                                   lr_schedule=get_schedule_fn(1),
+                                   net_arch=[256, 256],
+                                   features_extractor_class=NormalizeFeaturesExtractor,
+                                   features_extractor_kwargs=dict(normalize_class=RunningNorm),
+                                   ).q_net
+                print(f"Initialized a new policy as a randomized QNetwork")
+        if 'intervention_policy_path' in config['experiment'] and config['experiment']['intervention_policy_path'] is not None:
+            try:
+                intervention_policy = DQNPolicy.load(config['experiment']['intervention_policy_path']).q_net
+            except Exception as e:
+                print(f"Failed to load intervention policy: {e}")
+                intervention_policy = DQNPolicy(observation_space=env.observation_space,
+                                               action_space=env.action_space,
+                                               lr_schedule=get_schedule_fn(1),
+                                               net_arch=[256, 256],
+                                               features_extractor_class=NormalizeFeaturesExtractor,
+                                               features_extractor_kwargs=dict(normalize_class=RunningNorm),
+                                               ).q_net
+                print(f"Initialized an intervention policy as a randomized QNetwork")
         intervention_policy.eval()
     elif config['experiment']['policy_type'] == 'bc':
         policy = ActorCriticPolicy.load(config['experiment']['policy_path'])
@@ -164,7 +190,21 @@ def iterative_training(config):
                                 features_extractor_class=NormalizeFeaturesExtractor,
                                 features_extractor_kwargs=dict(normalize_class=RunningNorm),
                                 ).q_net
-        gt_mental_model = QNetwork.load(config['experiment']['gt_mental_model_path'])
+        # Initialize a randomized ground-truth mental model if the path is not provided or
+        # leads to a policy that is not a QNetwork
+        if 'gt_mental_model_path' in config['experiment'] and config['experiment']['gt_mental_model_path'] is not None:
+            try:
+                gt_mental_model = DQNPolicy.load(config['experiment']['gt_mental_model_path']).q_net
+                gt_mental_model.eval()
+            except Exception as e:
+                print(f"Failed to load ground-truth mental model: {e}")
+                gt_mental_model = DQNPolicy(observation_space=env.observation_space,
+                                            action_space=env.action_space,
+                                            lr_schedule=get_schedule_fn(1),
+                                            net_arch=[256, 256],
+                                            features_extractor_class=NormalizeFeaturesExtractor,
+                                            features_extractor_kwargs=dict(normalize_class=RunningNorm),
+                                            ).q_net
         gt_mental_model.eval()
 
     policy.to(device)

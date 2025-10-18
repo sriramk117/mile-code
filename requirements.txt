@@ -1,3 +1,4 @@
+swig
 gymnasium
 numpy
 wandb

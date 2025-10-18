@@ -116,10 +116,17 @@ def collect_synthetic_data(env:gym.Env,
 
                 state = next_state
                 score += reward
-                if done or info['success']:
-                    if info['success']:
-                        success = 1
-                    break
+                if isinstance(env.action_space, gym.spaces.Box):
+                    # If continuous action space
+                    if done or info['success']:
+                        if info['success']:
+                            success = 1
+                        break
+                elif isinstance(env.action_space, gym.spaces.Discrete):
+                    # There is no 'success' info received in the discrete envs
+                    # So we just break when done
+                    if done:
+                        break
             scores.append(score)
             successes.append(success)
 

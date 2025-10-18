@@ -7,7 +7,7 @@
         "lambda2": 1.0
     },
     "experiment": {
-        "name": "mile",
+        "name": "mile-discrete-LunarLander",
         "mode": "iterative",
         "validate": {
             "enabled": true,
@@ -16,7 +16,7 @@
         "logging": {
             "terminal_output_to_txt": false,
             "log_tb": false,
-            "log_wandb": true
+            "log_wandb": false
         },
         "save": {
             "enabled": true,
@@ -31,14 +31,14 @@
             "n_episodes": 30,
             "every_n_epochs": 100
         },
-        "env_name": "peg-insert-side-v3",
+        "env_name": "LunarLander-v3",
         "dataset_path": "path_to_offline_intervention_dataset",
-        "policy_type": "sac",
+        "policy_type": "qnetwork",
         "policy_path": "./trained_models/initial_policy",
-        "mental_model_type": "bc",
+        "mental_model_type": "qnetwork",
         "gt_mental_model_path": "./trained_models/gt_mental_model",
         "intervention_policy_path": "./trained_models/expert_policy",
-        "use_warm_start": true,
+        "use_warm_start": false, 
         "warm_start_path": "./trained_models/warm_started_mental_model",
         "num_rounds": 20,
         "episodes_per_round": 1,

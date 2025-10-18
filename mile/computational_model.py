@@ -110,11 +110,8 @@ def computational_intervention_model(state: torch.Tensor,
 
         # Computes p(v = 1 | a_h = a, s) where v is the intervention variable 
         # and a_h is the nominal action of the human
-        # inside_cdf = (mental_model_expected_action_probs * torch.log(policy_expected_action_probs)).sum(dim=1, keepdim=True) # computes cross-entropy H(mental_model, policy)
-        # inside_cdf = torch.log(policy_expected_action_probs) - inside_cdf
-        # inside_cdf = inside_cdf - cost
-        inside_cdf = (mental_model_expected_action_probs * torch.log(policy_expected_action_probs)).sum(dim=1) 
-        inside_cdf = policy_expected_action_probs - inside_cdf
+        inside_cdf = (mental_model_expected_action_probs * torch.log(policy_expected_action_probs)).sum(dim=1, keepdim=True) # computes expectation over a_h
+        inside_cdf = torch.log(policy_expected_action_probs) - inside_cdf
         inside_cdf = inside_cdf - cost
 
         # Compute intervention probability
