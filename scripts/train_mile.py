@@ -286,6 +286,10 @@ def iterative_training(config):
         intervention_rate = additional_data['intervention'].count(1)/len(additional_data['intervention'])
         intervention_probs = additional_data['intervention_prob']
         intervention_probs_per_round.append(intervention_probs)
+
+        # Log intervention rate to wandb
+        if config['experiment']['logging']['log_wandb']:
+            logger.log_intervention_rate(intervention_rate)
         
         for key in dataset.keys():
             if round == 0:

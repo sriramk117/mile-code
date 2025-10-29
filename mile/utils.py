@@ -172,12 +172,12 @@ class Logger:
         self._logger.dump(self._tensorboard_step)
         self._tensorboard_step += 1
 
-    def log_interventions(
+    def log_intervention_rate(
         self,
-        intervention_rate: List[float],
+        intervention_rate: float,
     ):
         if intervention_rate is not None:
-            self._logger.record("mile/interventions", intervention_rate)
+            self._logger.record("mile/intervention_rate", intervention_rate)
     
     def log_intervention_probs(
         self,
