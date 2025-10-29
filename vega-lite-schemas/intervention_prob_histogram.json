@@ -1,0 +1,101 @@
+{
+  "$schema": "https://vega.github.io/schema/vega-lite/v4.json",
+  "description": "A simple histogram",
+  "data": {
+    "name": "wandb"
+  },
+   "transform": [
+    {
+      "calculate": "if('${field:groupKeys}' === ''  || datum['${field:groupKeys}'] === '', false, true)",
+      "as": "grouped"
+    },
+    {
+      "calculate": "if('${field:groupKeys}' === ''  || datum['${field:groupKeys}'] === '', datum.name, datum['${field:groupKeys}'])",
+      "as": "newGroupKeys"
+    },
+    {
+      "calculate": "if('${field:groupKeys}' === ''  || datum['${field:groupKeys}'] === '', datum.color, datum['${field:groupKeys}'])",
+      "as": "color"
+    },
+  {
+    "aggregate": [
+      {
+      "op" : "average",
+      "field": "${field:value}",
+      "as": "${field:value}"
+      }
+    ],
+    "groupby": ["newGroupKeys", "color", "grouped", "${field:value}"]
+  }
+],
+  "selection": {
+    "grid": {
+      "type": "interval", "bind": "scales"
+    }
+  },
+  "title": "${string:title}",
+  "layer": [
+    {
+      "transform": [
+        {"filter": "datum.grouped == false"}
+      ],
+      "mark": {"type": "bar", "tooltip": {"content": "data"}},
+      "encoding": {
+        "x": {
+          "bin": true,
+          "type": "quantitative",
+          "field": "${field:value}"
+        },
+        "y": {
+          "aggregate": "count",
+          "stack": null,
+          "title": "Count of States"
+        },
+        "opacity": {"value": 0.6},
+        "detail": [{"field": "newGroupKeys"}, {"field": "color"}],
+        "color": {
+          "type": "nominal",
+          "field": "newGroupKeys",
+          "scale": {"range": {"field": "color"}},
+          "legend": {"title": null}
+        }
+      }
+    },
+    {
+      "transform": [
+        {"filter": "datum.grouped == true"}
+      ],
+      "mark": {"type": "bar", "tooltip": {"content": "data"}},
+      "encoding": {
+        "x": {
+          "bin": true,
+          "type": "quantitative",
+          "field": "${field:value}"
+        },
+        "y": {
+          "aggregate": "count",
+          "stack": true
+        },
+        "opacity": {"value": 0.6},
+        "detail": [{"field": "newGroupKeys"}, {"field": "color"}],
+        "color": {
+          "field": "newGroupKeys",
+          "type": "nominal",
+          "scale": {"range": "category"},
+          "legend": {"title": null}
+        }
+      }
+    },
+    {
+      "mark": {
+        "type": "rule",
+        "color": "red",
+        "strokeWidth": 2
+      },
+      "encoding": {
+        "x": {"datum": 0.33411757, "type": "quantitative"}
+      }
+    }
+  ],
+  "resolve": {"scale": {"color": "independent"}}
+}
