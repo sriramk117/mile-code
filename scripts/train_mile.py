@@ -34,6 +34,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 rand = np.random.randint(0, 1000)   
 
 DEPLOYMENT_COST = 0
+LEARNING_COST = 75
 
 def offline_training(config):
     env_name = config['experiment']['env_name']
@@ -111,6 +112,7 @@ def offline_training(config):
                                   env=env,
                                   logger=logger,
                                   config=config,
+                                  cost=LEARNING_COST,
                                   **config['train'])
     trainer.train(train_loader, val_loader)
 
@@ -242,6 +244,7 @@ def iterative_training(config):
                                   env=env,
                                   logger=logger,
                                   config=config,
+                                  cost=LEARNING_COST,
                                   **config['train'])
 
     if config['experiment']['include_offline_dataset']:

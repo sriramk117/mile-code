@@ -27,6 +27,7 @@ rand = np.random.randint(0, 1000)
 def generate_rollout(agent: Union[SACPolicy, policies.ActorCriticPolicy, QNetwork], 
                     env: gym.Env, 
                     env_name: str,
+                    cost: float=0.0,
                     num_episodes: int=10, 
                     max_t: int=1000, 
                     scores_window: deque=None, 
@@ -48,7 +49,6 @@ def generate_rollout(agent: Union[SACPolicy, policies.ActorCriticPolicy, QNetwor
         
         # Determine c value and cdf scale from hard-coded lookup 
         # table given environment
-        cost = COST_LOOKUP[env_name][0]
         cdf_scale = COST_LOOKUP[env_name][1]
     with torch.no_grad():
         success_rate = 0
@@ -171,6 +171,7 @@ class InterventionTrainer:
                  env: gym.Env,
                  logger: Logger,
                  config: dict,
+                 cost: float=0.0,
                  lr: float=1e-3,
                  batch_size: int=64,
                  num_epochs: int=10,
@@ -198,7 +199,7 @@ class InterventionTrainer:
         self.env_name = config['experiment']['env_name']
         if self.env_name not in COST_LOOKUP:
             raise ValueError(f'Cost lookup for {self.env_name} is not available, please add it to COST_LOOKUP')
-        self.intervention_cost = COST_LOOKUP[self.env_name][0]
+        self.intervention_cost = cost
         self.intervention_scale = COST_LOOKUP[self.env_name][1]
 
         self.score_window = deque(maxlen=100)
@@ -262,7 +263,7 @@ class InterventionTrainer:
                 final_prob, intervention_prob = computational_intervention_model(state=state,
                                                                                         mental_model=self.mental_model,
                                                                                         policy=self.policy,
-                                                                                        cost=self.intervention_cost,
+                                                                                        cost=cost,
                                                                                         cdf_scale=self.intervention_scale)
                 # Apply loss function for discrete action space
                 loss = self.loss_fn(final_prob, human_action)
@@ -356,7 +357,7 @@ class InterventionTrainer:
             validation_metrics = None
             success_rate = None
             init_success_rate = None
-            epoch_training_metrics = self._train_one_epoch(train_dataloader)
+            epoch_training_metrics = self._train_one_epoch(train_dataloader, cost=self.intervention_cost)
             if self.experiment_config['validate']['enabled']:
                 if epoch % self.experiment_config['validate']['every_n_epochs'] == 0 or epoch == self.num_epochs:
                     validation_metrics = self._validate_one_epoch(val_dataloader)
@@ -364,6 +365,7 @@ class InterventionTrainer:
                 if epoch % self.experiment_config['rollout']['every_n_epochs'] == 0 or epoch == self.num_epochs:
                     self.scores_window, success_rate = generate_rollout(self.policy, 
                                                                         self.env, 
+                                                                        cost=self.intervention_cost,
                                                                         env_name=self.env_name,
                                                                         num_episodes=self.experiment_config['rollout']['n_episodes'], 
                                                                         scores_window=self.score_window)
