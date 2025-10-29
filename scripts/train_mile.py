@@ -33,6 +33,7 @@ from collect_synthetic_interventions import collect_synthetic_data
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 rand = np.random.randint(0, 1000)   
 
+DEPLOYMENT_COST = 0
 
 def offline_training(config):
     env_name = config['experiment']['env_name']
@@ -218,7 +219,7 @@ def iterative_training(config):
     print(config)
     now = datetime.datetime.now()
     timestamp = now.strftime("%Y-%m-%d-%H-%M-%S-%f")
-    EXPERIMENT_NAME = config['experiment']['name']+'-'+timestamp
+    EXPERIMENT_NAME = config['experiment']['name']+'-'+'c = ' + str(DEPLOYMENT_COST)
     format_strs = ["stdout"]
     if config['experiment']['logging']['terminal_output_to_txt']:
         format_strs.append("log")
@@ -266,12 +267,14 @@ def iterative_training(config):
                     reward=[], 
                     done=[])
 
+    intervention_probs_per_round = []
     for round in range(num_rounds):
+        intervention_probs = np.array([])
         log_to_file('Round: {}'.format(round), EXPERIMENT_NAME+'_log.txt')
         print('Collecting intervention data...')
         additional_data, mean_score, mean_success_rate = collect_synthetic_data(env=env,
                                                                                 n_episodes=episodes_per_round,
-                                                                                cost=trainer.intervention_cost,
+                                                                                cost=DEPLOYMENT_COST,
                                                                                 cdf_scale=trainer.intervention_scale,
                                                                                 rollout_policy=trainer.policy,
                                                                                 intervention_policy=intervention_policy,
@@ -281,7 +284,9 @@ def iterative_training(config):
         log_to_file(f"Success rate: {mean_success_rate}", EXPERIMENT_NAME+'_log.txt')
         log_to_file(f"Number of interventions: {additional_data['intervention'].count(1)}", EXPERIMENT_NAME+'_log.txt')
         intervention_rate = additional_data['intervention'].count(1)/len(additional_data['intervention'])
-        logger.log_interventions(intervention_rate)
+        intervention_probs = additional_data['intervention_prob']
+        intervention_probs_per_round.append(intervention_probs)
+        
         for key in dataset.keys():
             if round == 0:
                 dataset[key].extend(additional_data[key])
@@ -295,6 +300,21 @@ def iterative_training(config):
         val_loader = DataLoader(valid_set, batch_size=config['train']['batch_size'], shuffle=False)
         trainer.train(train_loader, val_loader, round)
 
+    # Log histogram of intervention probabilities per round
+    for round in range(num_rounds):
+        round_probs = intervention_probs_per_round[round]
+        print(f"Round {round} intervention probabilities: {len(round_probs)} samples")
+        if config['experiment']['logging']['log_wandb']:
+            histogram = logger.log_intervention_probs(round_probs, title=f"Intervention Probabilities for Round {round}")
+            run.log({"intervention_probs_" + f"round_{round}": histogram})
+    print(len(intervention_probs_per_round))
+    print("Logging intervention probabilities per round...")
+
+    # Plot multiple histograms of intervention probabilities at each round
+    # in one plot
+    # if config['experiment']['logging']['log_wandb']:
+    #     histogram = logger.log_intervention_probs_per_round(intervention_probs_per_round)
+    #     run.log({"intervention_probs_per_round": histogram})
     if config['experiment']['logging']['log_wandb']:
         run.finish()
 

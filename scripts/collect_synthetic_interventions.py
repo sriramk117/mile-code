@@ -81,11 +81,10 @@ def collect_synthetic_data(env:gym.Env,
 
                     next_state, reward, terminated, truncated, info = env.step(action)
                     done = terminated or truncated
-
                     dataset['state'].append(state)
                     dataset['rollout_action'].append(rollout_action)
                     dataset['action'].append(action)
-                    dataset['intervention_prob'].append(intervention_prob)
+                    dataset['intervention_prob'].append(intervention_prob[1])
                     dataset['intervention'].append(intervene)
 
                 elif isinstance(env.action_space, gym.spaces.Discrete):

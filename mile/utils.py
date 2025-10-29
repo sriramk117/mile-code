@@ -4,6 +4,7 @@ import os
 import dataclasses
 from typing import Any, Callable, List, Mapping, Optional, Sequence, Tuple, Union
 
+import wandb
 import torch
 from torch.utils.data import Dataset, DataLoader
 
@@ -147,7 +148,6 @@ class Logger:
         self._logger.record("mile/batch", batch_num)
         for k, v in training_metrics.__dict__.items():
             self._logger.record(f"mile/{k}", float(v) if v is not None else None)
-
         self._logger.dump(self._tensorboard_step)
         self._tensorboard_step += 1
 
@@ -174,10 +174,41 @@ class Logger:
 
     def log_interventions(
         self,
-        intervention_rate: int,
+        intervention_rate: List[float],
     ):
         if intervention_rate is not None:
             self._logger.record("mile/interventions", intervention_rate)
+    
+    def log_intervention_probs(
+        self,
+        intervention_probs: List[float],
+        title: str = "Intervention Probabilities Across Rollout States",
+    ) -> wandb.plot.histogram:
+        """Log the intervention probabilities as a histogram."""
+        column_name = "Probabilities"
+        data = [[p] for p in intervention_probs]
+        table = wandb.Table(data=data, columns=[column_name])
+        histogram = wandb.plot.histogram(
+            table,
+            value=column_name,
+            title=title
+        )
+        return histogram
+
+    def log_intervention_probs_per_round(
+        self,
+        intervention_probs_per_round: List[float],
+    ) -> wandb.plot.histogram:
+        """Log the intervention probabilities per round as a histogram."""
+        column_names = ["round", "probabilities"]
+        data = [[train_round, p] for train_round, p in enumerate(intervention_probs_per_round)]
+        table = wandb.Table(data=data, columns=["round", "probabilities"])
+        histogram = wandb.plot.histogram(
+            table,
+            value="probabilities",
+            title="Intervention Probabilities Across Rollout States"
+        )
+        return histogram
 
     def log_epoch_metrics(
         self,

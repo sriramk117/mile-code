@@ -357,10 +357,6 @@ class InterventionTrainer:
             success_rate = None
             init_success_rate = None
             epoch_training_metrics = self._train_one_epoch(train_dataloader)
-            # Initialize best policy and mental model if first epoch
-            if epoch == 1:
-                best_policy = deepcopy(self.policy)
-                best_mental_model = deepcopy(self.mental_model)
             if self.experiment_config['validate']['enabled']:
                 if epoch % self.experiment_config['validate']['every_n_epochs'] == 0 or epoch == self.num_epochs:
                     validation_metrics = self._validate_one_epoch(val_dataloader)
