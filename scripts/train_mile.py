@@ -33,8 +33,8 @@ from collect_synthetic_interventions import collect_synthetic_data
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 rand = np.random.randint(0, 1000)   
 
-DEPLOYMENT_COST = 0
-LEARNING_COST = 75
+DEPLOYMENT_COST = 75
+LEARNING_COST = -150
 
 def offline_training(config):
     env_name = config['experiment']['env_name']
@@ -221,7 +221,7 @@ def iterative_training(config):
     print(config)
     now = datetime.datetime.now()
     timestamp = now.strftime("%Y-%m-%d-%H-%M-%S-%f")
-    EXPERIMENT_NAME = config['experiment']['name']+'-'+'c = ' + str(DEPLOYMENT_COST)
+    EXPERIMENT_NAME = 'cost_l=' + str(LEARNING_COST) + ' cost_d=' + str(DEPLOYMENT_COST)
     format_strs = ["stdout"]
     if config['experiment']['logging']['terminal_output_to_txt']:
         format_strs.append("log")
@@ -271,6 +271,7 @@ def iterative_training(config):
                     done=[])
 
     intervention_probs_per_round = []
+    lowest_intervention_rate = 1.0
     for round in range(num_rounds):
         intervention_probs = np.array([])
         log_to_file('Round: {}'.format(round), EXPERIMENT_NAME+'_log.txt')
@@ -289,6 +290,13 @@ def iterative_training(config):
         intervention_rate = additional_data['intervention'].count(1)/len(additional_data['intervention'])
         intervention_probs = additional_data['intervention_prob']
         intervention_probs_per_round.append(intervention_probs)
+
+        print(f"Intervention rate this round: {intervention_rate}")
+        print(f"Best success rate this round: {trainer.best_success_rate}")
+
+        # Keep track of the lowest intervention rate
+        if intervention_rate < lowest_intervention_rate:
+            lowest_intervention_rate = intervention_rate
 
         # Log intervention rate to wandb
         if config['experiment']['logging']['log_wandb']:
@@ -316,6 +324,19 @@ def iterative_training(config):
             run.log({"intervention_probs_" + f"round_{round}": histogram})
     print(len(intervention_probs_per_round))
     print("Logging intervention probabilities per round...")
+
+    # Log best intervention rate and best success rate achieved
+    print(f"Learning cost: {LEARNING_COST}")
+    print(f"Deployment cost: {DEPLOYMENT_COST}")
+    print(f"Best intervention rate achieved: {lowest_intervention_rate}")
+    print(f"Best success rate achieved: {trainer.best_success_rate}")
+    if config['experiment']['logging']['log_wandb']:
+        run.log({
+            "lowest_intervention_rate": lowest_intervention_rate,
+            "best_success_rate": trainer.best_success_rate, 
+            "learning_cost": LEARNING_COST, 
+            "deployment_cost": DEPLOYMENT_COST
+        })
 
     # Plot multiple histograms of intervention probabilities at each round
     # in one plot

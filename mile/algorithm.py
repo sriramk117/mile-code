@@ -206,6 +206,7 @@ class InterventionTrainer:
         self.init_policy = deepcopy(self.policy)
         self.score_window, init_success_rate = generate_rollout(self.policy, self.env, env_name=self.env_name, scores_window=self.score_window)
         self.logger.log_rollout(success_rate=init_success_rate, init_success_rate=init_success_rate)
+        self.best_success_rate = 0.0
 
     def _train_one_epoch(self, dataloader):
         self.policy.train()
@@ -222,7 +223,6 @@ class InterventionTrainer:
                 intervention_prob = batch['intervention_prob'].float().to(device)
                 ground_truth_action = batch['action'].float().to(device)
                 ground_truth_intervention = batch['intervention'].long().to(device)
-
 
                 final_mu, final_log_std, intervention_prob, policy_mu, policy_log_std = computational_intervention_model(state=state, 
                                                                                                                         mental_model=self.mental_model, 
@@ -263,7 +263,7 @@ class InterventionTrainer:
                 final_prob, intervention_prob = computational_intervention_model(state=state,
                                                                                         mental_model=self.mental_model,
                                                                                         policy=self.policy,
-                                                                                        cost=cost,
+                                                                                        cost=self.intervention_cost,
                                                                                         cdf_scale=self.intervention_scale)
                 # Apply loss function for discrete action space
                 loss = self.loss_fn(final_prob, human_action)
@@ -357,7 +357,7 @@ class InterventionTrainer:
             validation_metrics = None
             success_rate = None
             init_success_rate = None
-            epoch_training_metrics = self._train_one_epoch(train_dataloader, cost=self.intervention_cost)
+            epoch_training_metrics = self._train_one_epoch(train_dataloader)
             if self.experiment_config['validate']['enabled']:
                 if epoch % self.experiment_config['validate']['every_n_epochs'] == 0 or epoch == self.num_epochs:
                     validation_metrics = self._validate_one_epoch(val_dataloader)
@@ -373,6 +373,7 @@ class InterventionTrainer:
                     scores_window, init_success_rate = generate_rollout(self.init_policy, self.env, env_name=self.env_name, num_episodes=self.experiment_config['rollout']['n_episodes'], scores_window=scores_window)
                     if success_rate > best_success_rate:
                         best_success_rate = success_rate
+                        self.best_success_rate = best_success_rate
                         best_policy = deepcopy(self.policy)
                         best_mental_model = deepcopy(self.mental_model)
     

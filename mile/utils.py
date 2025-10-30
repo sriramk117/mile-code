@@ -194,6 +194,40 @@ class Logger:
             title=title
         )
         return histogram
+    
+    def log_success_rate_wrt_cost(
+        self,
+        success_rates: List[float],
+        costs: List[float],
+    ) -> wandb.plot.scatter:
+        """Log the success rates with respect to costs as a scatter plot."""
+        column_names = ["Costs", "Success Rate"]
+        data = [[c, sr] for c, sr in zip(costs, success_rates)]
+        table = wandb.Table(data=data, columns=column_names)
+        scatter = wandb.plot.scatter(
+            table,
+            x="Cost",
+            y="Success Rate",
+            title="Success Rate vs Cost"
+        )
+        return scatter
+    
+    def log_intervention_rate_wrt_cost(
+        self,
+        intervention_rates: List[float],
+        costs: List[float],
+    ) -> wandb.plot.scatter:
+        """Log the intervention rates with respect to costs as a scatter plot."""
+        column_names = ["Costs", "Intervention Rate"]
+        data = [[c, ir] for c, ir in zip(costs, intervention_rates)]
+        table = wandb.Table(data=data, columns=column_names)
+        scatter = wandb.plot.scatter(
+            table,
+            x="Cost",
+            y="Intervention Rate",
+            title="Intervention Rate vs Cost"
+        )
+        return scatter
 
     def log_intervention_probs_per_round(
         self,
