@@ -57,12 +57,15 @@ def collect_synthetic_data(env:gym.Env,
                 done=[])
     scores = []
     successes = []
+    intervention_rates = []
 
     with torch.no_grad():
         for eps in range(n_episodes):               
             state, _ = env.reset()
             score = 0
             success = 0
+            num_visited = 0
+            num_interventions = 0
             for t in range(max_t):
                 rollout_action, _ = rollout_policy.predict(state, deterministic=True)
                 tensor_state = torch.from_numpy(state).float().to(device)
@@ -72,6 +75,8 @@ def collect_synthetic_data(env:gym.Env,
                     intervention_prob = intervention_prob.squeeze(0).detach().cpu().numpy()
 
                     intervene = np.random.choice([0, 1], p=intervention_prob)
+                    num_visited += 1
+                    num_interventions += intervene
                     if intervene:
                         final_action_dist = D.Normal(final_mu, final_log_std.exp())
                         action = final_action_dist.sample()
@@ -128,8 +133,9 @@ def collect_synthetic_data(env:gym.Env,
                         break
             scores.append(score)
             successes.append(success)
-
-    return dataset, np.mean(scores), np.mean(successes)
+            intervention_rates.append(num_interventions / num_visited if num_visited > 0 else 0.0)
+            
+    return dataset, np.mean(scores), np.mean(successes), np.mean(intervention_rates)
 
 
 def main(args, 

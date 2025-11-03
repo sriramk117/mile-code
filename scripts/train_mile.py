@@ -33,8 +33,8 @@ from collect_synthetic_interventions import collect_synthetic_data
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 rand = np.random.randint(0, 1000)   
 
-DEPLOYMENT_COST = 75
-LEARNING_COST = -150
+DEPLOYMENT_COST = -75
+LEARNING_COST = 150
 
 def offline_training(config):
     env_name = config['experiment']['env_name']
@@ -221,7 +221,7 @@ def iterative_training(config):
     print(config)
     now = datetime.datetime.now()
     timestamp = now.strftime("%Y-%m-%d-%H-%M-%S-%f")
-    EXPERIMENT_NAME = 'cost_l=' + str(LEARNING_COST) + ' cost_d=' + str(DEPLOYMENT_COST)
+    EXPERIMENT_NAME = 'cost_l=' + str(LEARNING_COST) + ' cost_d=' + str(DEPLOYMENT_COST) 
     format_strs = ["stdout"]
     if config['experiment']['logging']['terminal_output_to_txt']:
         format_strs.append("log")
@@ -276,7 +276,7 @@ def iterative_training(config):
         intervention_probs = np.array([])
         log_to_file('Round: {}'.format(round), EXPERIMENT_NAME+'_log.txt')
         print('Collecting intervention data...')
-        additional_data, mean_score, mean_success_rate = collect_synthetic_data(env=env,
+        additional_data, mean_score, mean_success_rate, mean_intervention_rate = collect_synthetic_data(env=env,
                                                                                 n_episodes=episodes_per_round,
                                                                                 cost=DEPLOYMENT_COST,
                                                                                 cdf_scale=trainer.intervention_scale,
@@ -291,17 +291,18 @@ def iterative_training(config):
         intervention_probs = additional_data['intervention_prob']
         intervention_probs_per_round.append(intervention_probs)
 
-        print(f"Intervention rate this round: {intervention_rate}")
+        print(f"Intervention rate this round: {mean_intervention_rate}")
         print(f"Best success rate this round: {trainer.best_success_rate}")
 
         # Keep track of the lowest intervention rate
-        if intervention_rate < lowest_intervention_rate:
-            lowest_intervention_rate = intervention_rate
+        if mean_intervention_rate < lowest_intervention_rate:
+            lowest_intervention_rate = mean_intervention_rate
 
         # Log intervention rate to wandb
         if config['experiment']['logging']['log_wandb']:
-            logger.log_intervention_rate(intervention_rate)
-        
+            logger.log_success_rate_deployment(mean_success_rate)
+            logger.log_intervention_rate(mean_intervention_rate)
+
         for key in dataset.keys():
             if round == 0:
                 dataset[key].extend(additional_data[key])
@@ -333,7 +334,7 @@ def iterative_training(config):
     if config['experiment']['logging']['log_wandb']:
         run.log({
             "lowest_intervention_rate": lowest_intervention_rate,
-            "best_success_rate": trainer.best_success_rate, 
+            "best_success_rate": trainer.best_success_rate,
             "learning_cost": LEARNING_COST, 
             "deployment_cost": DEPLOYMENT_COST
         })

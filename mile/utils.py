@@ -195,6 +195,13 @@ class Logger:
         )
         return histogram
     
+    def log_success_rate_deployment(
+        self,
+        success_rate: float,
+    ):
+        if success_rate is not None:
+            self._logger.record("mile/deployment_success_rate", success_rate)
+
     def log_success_rate_wrt_cost(
         self,
         success_rates: List[float],
@@ -211,7 +218,7 @@ class Logger:
             title="Success Rate vs Cost"
         )
         return scatter
-    
+
     def log_intervention_rate_wrt_cost(
         self,
         intervention_rates: List[float],
