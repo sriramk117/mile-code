@@ -33,8 +33,8 @@ from collect_synthetic_interventions import collect_synthetic_data
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 rand = np.random.randint(0, 1000)   
 
-DEPLOYMENT_COST = -75
-LEARNING_COST = 150
+DEPLOYMENT_COST = 75
+LEARNING_COST = 75
 
 def offline_training(config):
     env_name = config['experiment']['env_name']
@@ -221,7 +221,7 @@ def iterative_training(config):
     print(config)
     now = datetime.datetime.now()
     timestamp = now.strftime("%Y-%m-%d-%H-%M-%S-%f")
-    EXPERIMENT_NAME = 'cost_l=' + str(LEARNING_COST) + ' cost_d=' + str(DEPLOYMENT_COST) 
+    EXPERIMENT_NAME = 'cost_l=' + str(LEARNING_COST) + ' cost_d=' + str(DEPLOYMENT_COST) + ' dist log (full)'
     format_strs = ["stdout"]
     if config['experiment']['logging']['terminal_output_to_txt']:
         format_strs.append("log")
@@ -271,12 +271,13 @@ def iterative_training(config):
                     done=[])
 
     intervention_probs_per_round = []
+    inside_cdf_terms_per_round = []
     lowest_intervention_rate = 1.0
     for round in range(num_rounds):
         intervention_probs = np.array([])
         log_to_file('Round: {}'.format(round), EXPERIMENT_NAME+'_log.txt')
         print('Collecting intervention data...')
-        additional_data, mean_score, mean_success_rate, mean_intervention_rate = collect_synthetic_data(env=env,
+        additional_data, mean_score, mean_success_rate, mean_intervention_rate, inside_cdf_terms = collect_synthetic_data(env=env,
                                                                                 n_episodes=episodes_per_round,
                                                                                 cost=DEPLOYMENT_COST,
                                                                                 cdf_scale=trainer.intervention_scale,
@@ -290,6 +291,7 @@ def iterative_training(config):
         intervention_rate = additional_data['intervention'].count(1)/len(additional_data['intervention'])
         intervention_probs = additional_data['intervention_prob']
         intervention_probs_per_round.append(intervention_probs)
+        inside_cdf_terms_per_round.append(inside_cdf_terms)
 
         print(f"Intervention rate this round: {mean_intervention_rate}")
         print(f"Best success rate this round: {trainer.best_success_rate}")
@@ -321,8 +323,10 @@ def iterative_training(config):
         round_probs = intervention_probs_per_round[round]
         print(f"Round {round} intervention probabilities: {len(round_probs)} samples")
         if config['experiment']['logging']['log_wandb']:
-            histogram = logger.log_intervention_probs(round_probs, title=f"Intervention Probabilities for Round {round}")
-            run.log({"intervention_probs_" + f"round_{round}": histogram})
+            # histogram = logger.log_intervention_probs(round_probs, title=f"Intervention Probabilities for Round {round}")
+            # run.log({"intervention_probs_" + f"round_{round}": histogram})
+            histogram_inside_cdf = logger.log_intervention_probs(inside_cdf_terms_per_round[round], title=f"Inside CDF Terms for Round {round}")
+            run.log({"inside_cdf_terms_" + f"round_{round}": histogram_inside_cdf})
     print(len(intervention_probs_per_round))
     print("Logging intervention probabilities per round...")
 

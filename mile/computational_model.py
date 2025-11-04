@@ -42,12 +42,11 @@ def sum_independent_dims(tensor: torch.Tensor) -> torch.Tensor:
 
 def monte_carlo_samples(state: torch.Tensor, 
                         policy: Union[ActorCriticPolicy, SACPolicy], 
-                        num_samples: int =1000) -> torch.Tensor:
+                        num_samples: int = 1000) -> torch.Tensor:
     '''Compute the expectation of a function using Monte Carlo sampling
     Input:
         state: state of the environment (batch_size, state_size) or (state_size)
         policy: policy of the robot (preferably SAC policy)
-        function: function to compute the expectation
         num_samples: number of samples to use for Monte Carlo sampling
     
     Output:
@@ -126,7 +125,11 @@ def computational_intervention_model(state: torch.Tensor,
     
     # Continuous environment
     elif isinstance(policy.action_space, gym.spaces.Box):
+        # Use monte carlo sampling to gather information about 
+        # the mental model policy
         mental_model_samples = monte_carlo_samples(state=state, policy=mental_model, num_samples=1000)
+        
+        # Get policy distribution from current network
         if isinstance(policy, SACPolicy):
             mu, log_std, _ = policy.actor.get_action_dist_params(state)
             policy_dist = D.Normal(mu, log_std.exp())
@@ -135,11 +138,19 @@ def computational_intervention_model(state: torch.Tensor,
             policy_dist = dist.distribution
         else:
             raise ValueError("Policy should be either SACPolicy or ActorCriticPolicy")
+        print(f"Shape of policy dist mean: {sum_independent_dims(policy_dist.log_prob(mental_model_samples)).shape}")
+        
+        # Compute expectation under the mental model by summing log probs
+        # of sampled actions
         mental_model_expectation = torch.mean(sum_independent_dims(policy_dist.log_prob(mental_model_samples)), dim=0)
+
+        # Run monte carlo sampling on the policy to get action samples
         policy_samples = monte_carlo_samples(state=state, policy=policy, num_samples=1000)
         mean = torch.tensor([0.0], device=state.device)
         std_dev = torch.tensor([cdf_scale], device=state.device)
-        policy_expectation = D.Normal(mean, std_dev).cdf(sum_independent_dims(policy_dist.log_prob(policy_samples))-mental_model_expectation-cost)
+        value_diff = sum_independent_dims(policy_dist.log_prob(policy_samples))-mental_model_expectation
+        inside_cdf = value_diff-cost
+        policy_expectation = D.Normal(mean, std_dev).cdf(inside_cdf)
         intervention_prob = torch.mean(policy_expectation, dim=0)
         final_mu = intervention_prob.unsqueeze(1)*mu
         final_log_std = torch.log(intervention_prob.unsqueeze(1)) + log_std
@@ -149,7 +160,7 @@ def computational_intervention_model(state: torch.Tensor,
         intervention_prob = intervention_prob.unsqueeze(-1)
         intervention_prob = torch.cat((1-intervention_prob, intervention_prob), dim=-1)
 
-        return final_mu, final_log_std, intervention_prob, policy_dist.mean, torch.log(policy_dist.stddev)
+        return final_mu, final_log_std, intervention_prob, policy_dist.mean, torch.log(policy_dist.stddev), value_diff
     
 
 def random_intervention(intervention_rate=0.1):

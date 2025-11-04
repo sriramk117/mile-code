@@ -1,6 +1,7 @@
 import numpy as np
 import pickle
 import argparse
+import time
 from typing import Any, Callable, List, Mapping, Optional, Sequence, Tuple, Union
 
 import gymnasium as gym
@@ -58,8 +59,13 @@ def collect_synthetic_data(env:gym.Env,
     scores = []
     successes = []
     intervention_rates = []
+    inside_cdf_terms = []
+    # min_value_diff = float('inf')
+    # max_value_diff = float('-inf')
 
     with torch.no_grad():
+        min_value_diff = float('inf')
+        max_value_diff = float('-inf')
         for eps in range(n_episodes):               
             state, _ = env.reset()
             score = 0
@@ -71,12 +77,25 @@ def collect_synthetic_data(env:gym.Env,
                 tensor_state = torch.from_numpy(state).float().to(device)
                 if isinstance(env.action_space, gym.spaces.Box):
                     rollout_action = TanhBijector.inverse(torch.from_numpy(rollout_action)).numpy() if isinstance(rollout_policy, SACPolicy) else rollout_action
-                    final_mu, final_log_std, intervention_prob, _, _ = computational_intervention_model(tensor_state, mental_model, intervention_policy, cost=cost, cdf_scale=cdf_scale)
+                    final_mu, final_log_std, intervention_prob, _, _, value_diff = computational_intervention_model(tensor_state, mental_model, intervention_policy, cost=cost, cdf_scale=cdf_scale)
                     intervention_prob = intervention_prob.squeeze(0).detach().cpu().numpy()
 
                     intervene = np.random.choice([0, 1], p=intervention_prob)
                     num_visited += 1
                     num_interventions += intervene
+                    
+                    # Sample a subset of value differences to log
+                    # num_samples = 50
+                    # sampled_idx = torch.randperm(value_diff.shape[0])
+                    # sampled_value_diff = value_diff[sampled_idx[:num_samples]]
+                    inside_cdf_terms.extend(value_diff.flatten().detach().cpu().numpy().tolist())
+
+                    # Log max and min value differences
+                    if min_value_diff > torch.min(value_diff):
+                        min_value_diff = torch.min(value_diff)
+                    if max_value_diff < torch.max(value_diff):
+                        max_value_diff = torch.max(value_diff)
+
                     if intervene:
                         final_action_dist = D.Normal(final_mu, final_log_std.exp())
                         action = final_action_dist.sample()
@@ -134,8 +153,9 @@ def collect_synthetic_data(env:gym.Env,
             scores.append(score)
             successes.append(success)
             intervention_rates.append(num_interventions / num_visited if num_visited > 0 else 0.0)
-            
-    return dataset, np.mean(scores), np.mean(successes), np.mean(intervention_rates)
+        print(f"Min Value Diff: {min_value_diff}, Max Value Diff: {max_value_diff}")
+        time.sleep(2) 
+    return dataset, np.mean(scores), np.mean(successes), np.mean(intervention_rates), inside_cdf_terms
 
 
 def main(args, 

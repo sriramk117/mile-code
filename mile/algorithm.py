@@ -62,7 +62,7 @@ def generate_rollout(agent: Union[SACPolicy, policies.ActorCriticPolicy, QNetwor
                 if with_intervention:
                     # If continuous action space
                     if isinstance(env.action_space, gym.spaces.Box):
-                        final_mu, final_log_std, intervention_prob, _, _ = computational_intervention_model(state=torch.from_numpy(state).float().to(device),
+                        final_mu, final_log_std, intervention_prob, _, _, value_diff = computational_intervention_model(state=torch.from_numpy(state).float().to(device),
                                                                                                             mental_model=mental_model,
                                                                                                             policy=intervention_policy,
                                                                                                             cost=cost,
@@ -224,7 +224,7 @@ class InterventionTrainer:
                 ground_truth_action = batch['action'].float().to(device)
                 ground_truth_intervention = batch['intervention'].long().to(device)
 
-                final_mu, final_log_std, intervention_prob, policy_mu, policy_log_std = computational_intervention_model(state=state, 
+                final_mu, final_log_std, intervention_prob, _, _, value_diff = computational_intervention_model(state=state, 
                                                                                                                         mental_model=self.mental_model, 
                                                                                                                         policy=self.policy, 
                                                                                                                         cost=self.intervention_cost, 
@@ -308,7 +308,7 @@ class InterventionTrainer:
                     ground_truth_action = batch['action'].float().to(device)
                     ground_truth_intervention = batch['intervention'].long().to(device)
 
-                    final_mu, final_log_std, intervention_prob, policy_mu, policy_log_std = computational_intervention_model(state=state, 
+                    final_mu, final_log_std, intervention_prob, policy_mu, policy_log_std, _ = computational_intervention_model(state=state, 
                                                                                                                             mental_model=self.mental_model, 
                                                                                                                             policy=self.policy, 
                                                                                                                             cost=self.intervention_cost, 
@@ -394,7 +394,7 @@ class InterventionTrainer:
         if self.experiment_config['save']['enabled']:
             self.policy.save(self.experiment_config['save']['outdir']+'/policy')
             self.mental_model.save(self.experiment_config['save']['outdir']+'/mental_model')
-            if self.experiment_config['save']['on_best_rollout_success_rate']:
+            if self.experiment_config['save']['on_best_rollout_success_rate'] and self.experiment_config['rollout']['enabled']:
                 best_policy.save(self.experiment_config['save']['outdir']+'/best_policy')
                 best_mental_model.save(self.experiment_config['save']['outdir']+'/best_mental_model')
             with open(self.experiment_config['save']['outdir']+'/config.pkl', 'wb') as f:

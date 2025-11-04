@@ -27,7 +27,7 @@
             "outdir": "output_dir"
         },
         "rollout": {
-            "enabled": true,
+            "enabled": false,
             "n_episodes": 30,
             "every_n_epochs": 100
         },
@@ -40,7 +40,7 @@
         "intervention_policy_path": "./trained_models/expert_policy",
         "use_warm_start": true, 
         "warm_start_path": "./trained_models/warm_started_mental_model",
-        "num_rounds": 20,
+        "num_rounds": 5,
         "episodes_per_round": 1,
         "include_offline_dataset": false,
         "offline_dataset_path": "path_to_initial_offline_demonstration_dataset"
