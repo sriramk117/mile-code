@@ -23,6 +23,7 @@ from stable_baselines3.common.distributions import TanhBijector
 
 from mile.computational_model import computational_intervention_model, COST_LOOKUP
 
+
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")   
 
 def collect_synthetic_data(env:gym.Env, 
@@ -60,8 +61,6 @@ def collect_synthetic_data(env:gym.Env,
     successes = []
     intervention_rates = []
     inside_cdf_terms = []
-    # min_value_diff = float('inf')
-    # max_value_diff = float('-inf')
 
     with torch.no_grad():
         min_value_diff = float('inf')
@@ -85,10 +84,10 @@ def collect_synthetic_data(env:gym.Env,
                     num_interventions += intervene
                     
                     # Sample a subset of value differences to log
-                    # num_samples = 50
+                    # num_samples = 100
                     # sampled_idx = torch.randperm(value_diff.shape[0])
                     # sampled_value_diff = value_diff[sampled_idx[:num_samples]]
-                    inside_cdf_terms.extend(value_diff.flatten().detach().cpu().numpy().tolist())
+                    # inside_cdf_terms.extend(sampled_value_diff.flatten().detach().cpu().numpy().tolist())
 
                     # Log max and min value differences
                     if min_value_diff > torch.min(value_diff):
@@ -154,7 +153,6 @@ def collect_synthetic_data(env:gym.Env,
             successes.append(success)
             intervention_rates.append(num_interventions / num_visited if num_visited > 0 else 0.0)
         print(f"Min Value Diff: {min_value_diff}, Max Value Diff: {max_value_diff}")
-        time.sleep(2) 
     return dataset, np.mean(scores), np.mean(successes), np.mean(intervention_rates), inside_cdf_terms
 
 

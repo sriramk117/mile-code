@@ -27,9 +27,15 @@
             "outdir": "output_dir"
         },
         "rollout": {
-            "enabled": false,
+            "enabled": true,
             "n_episodes": 30,
             "every_n_epochs": 100
+        },
+        "mile_hyperparams": {
+            "deployment_cost": 60.0,
+            "learning_cost": 60.0,
+            "cdf_scale": 27.0,
+            "env_name": "peg-insert-side-v3"
         },
         "env_name": "peg-insert-side-v3",
         "dataset_path": "path_to_offline_intervention_dataset",

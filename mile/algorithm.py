@@ -28,6 +28,7 @@ def generate_rollout(agent: Union[SACPolicy, policies.ActorCriticPolicy, QNetwor
                     env: gym.Env, 
                     env_name: str,
                     cost: float=0.0,
+                    cdf_scale: float=1.0,
                     num_episodes: int=10, 
                     max_t: int=1000, 
                     scores_window: deque=None, 
@@ -47,9 +48,6 @@ def generate_rollout(agent: Union[SACPolicy, policies.ActorCriticPolicy, QNetwor
         if env_name not in COST_LOOKUP:
             raise ValueError(f'Cost lookup for {env_name} is not available, please add it to COST_LOOKUP')
         
-        # Determine c value and cdf scale from hard-coded lookup 
-        # table given environment
-        cdf_scale = COST_LOOKUP[env_name][1]
     with torch.no_grad():
         success_rate = 0
         for eps in range(num_episodes):
@@ -200,7 +198,7 @@ class InterventionTrainer:
         if self.env_name not in COST_LOOKUP:
             raise ValueError(f'Cost lookup for {self.env_name} is not available, please add it to COST_LOOKUP')
         self.intervention_cost = cost
-        self.intervention_scale = COST_LOOKUP[self.env_name][1]
+        self.intervention_scale = config['experiment']['mile_hyperparams']['cdf_scale']
 
         self.score_window = deque(maxlen=100)
         self.init_policy = deepcopy(self.policy)
@@ -352,7 +350,7 @@ class InterventionTrainer:
         return validation_metrics 
     
     def train(self, train_dataloader: DataLoader, val_dataloader: DataLoader, round: Optional[int]=None):
-        best_success_rate = 0
+        best_success_rate = float('-inf')
         for epoch in range(1, self.num_epochs+1):
             validation_metrics = None
             success_rate = None
@@ -394,7 +392,7 @@ class InterventionTrainer:
         if self.experiment_config['save']['enabled']:
             self.policy.save(self.experiment_config['save']['outdir']+'/policy')
             self.mental_model.save(self.experiment_config['save']['outdir']+'/mental_model')
-            if self.experiment_config['save']['on_best_rollout_success_rate'] and self.experiment_config['rollout']['enabled']:
+            if self.experiment_config['save']['on_best_rollout_success_rate']:
                 best_policy.save(self.experiment_config['save']['outdir']+'/best_policy')
                 best_mental_model.save(self.experiment_config['save']['outdir']+'/best_mental_model')
             with open(self.experiment_config['save']['outdir']+'/config.pkl', 'wb') as f:

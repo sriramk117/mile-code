@@ -138,7 +138,6 @@ def computational_intervention_model(state: torch.Tensor,
             policy_dist = dist.distribution
         else:
             raise ValueError("Policy should be either SACPolicy or ActorCriticPolicy")
-        print(f"Shape of policy dist mean: {sum_independent_dims(policy_dist.log_prob(mental_model_samples)).shape}")
         
         # Compute expectation under the mental model by summing log probs
         # of sampled actions
