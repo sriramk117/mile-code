@@ -338,8 +338,14 @@ def iterative_training(config):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Intervention training')
     parser.add_argument('--config', type=str, default='config.json', help='Path to the config file')
+    parser.add_argument('--learner_cost', type=float, default=None, help='Override learning cost from config file')
+    parser.add_argument('--deployment_cost', type=float, default=None, help='Override deployment cost from config file')
     args = parser.parse_args()
     config = read_config(args.config)
+    if args.learner_cost is not None:
+        config['experiment']['mile_hyperparams']['learning_cost'] = args.learner_cost
+    if args.deployment_cost is not None:
+        config['experiment']['mile_hyperparams']['deployment_cost'] = args.deployment_cost
     if config['experiment']['save']['enabled']:
         os.makedirs(config['experiment']['save']['outdir'], exist_ok=True)
 
