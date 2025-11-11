@@ -218,7 +218,13 @@ def iterative_training(config):
     print(config)
     now = datetime.datetime.now()
     timestamp = now.strftime("%Y-%m-%d-%H-%M-%S-%f")
-    EXPERIMENT_NAME = 'c=60 std=27'
+    learning_cost = config['experiment']['mile_hyperparams']['learning_cost']
+    deployment_cost = config['experiment']['mile_hyperparams']['deployment_cost']
+    deployment_cdf_scale = config['experiment']['mile_hyperparams']['deployment_cdf_scale']
+    learner_cdf_scale = config['experiment']['mile_hyperparams']['learner_cdf_scale']
+    lambda1 = config['experiment']['mile_hyperparams']['lambda1']
+    lambda2 = config['experiment']['mile_hyperparams']['lambda2']
+    EXPERIMENT_NAME = f"lambda1={lambda1} lambda2={lambda2} ({num_rounds} rounds) " +'-'+timestamp
     format_strs = ["stdout"]
     if config['experiment']['logging']['terminal_output_to_txt']:
         format_strs.append("log")
@@ -270,15 +276,16 @@ def iterative_training(config):
     intervention_probs_per_round = []
     inside_cdf_terms_per_round = []
     lowest_intervention_rate = 1.0
+    deployment_cost = config['experiment']['mile_hyperparams']['deployment_cost']
+    deployment_cdf_scale = config['experiment']['mile_hyperparams']['deployment_cdf_scale']
     for round in range(num_rounds):
         intervention_probs = np.array([])
         log_to_file('Round: {}'.format(round), EXPERIMENT_NAME+'_log.txt')
         print('Collecting intervention data...')
-        deployment_cost = config['experiment']['mile_hyperparams']['deployment_cost']
         additional_data, mean_score, mean_success_rate, mean_intervention_rate, inside_cdf_terms = collect_synthetic_data(env=env,
                                                                                 n_episodes=episodes_per_round,
                                                                                 cost=deployment_cost,
-                                                                                cdf_scale=trainer.intervention_scale,
+                                                                                cdf_scale=deployment_cdf_scale,
                                                                                 rollout_policy=trainer.policy,
                                                                                 intervention_policy=intervention_policy,
                                                                                 mental_model=gt_mental_model)
@@ -340,6 +347,8 @@ if __name__ == "__main__":
     parser.add_argument('--config', type=str, default='config.json', help='Path to the config file')
     parser.add_argument('--learner_cost', type=float, default=None, help='Override learning cost from config file')
     parser.add_argument('--deployment_cost', type=float, default=None, help='Override deployment cost from config file')
+    parser.add_argument('--lambda1', type=float, default=None, help='Override lambda1 from config file') 
+    parser.add_argument('--lambda2', type=float, default=None, help='Override lambda2 from config file')
     args = parser.parse_args()
     config = read_config(args.config)
     if args.learner_cost is not None:
@@ -348,6 +357,15 @@ if __name__ == "__main__":
         config['experiment']['mile_hyperparams']['deployment_cost'] = args.deployment_cost
     if config['experiment']['save']['enabled']:
         os.makedirs(config['experiment']['save']['outdir'], exist_ok=True)
+    if args.lambda1 is not None:
+        config['train']['lambda1'] = args.lambda1
+        config['experiment']['mile_hyperparams']['lambda1'] = config['train']['lambda1']
+    if args.lambda2 is not None:
+        config['train']['lambda2'] = args.lambda2
+        config['experiment']['mile_hyperparams']['lambda2'] = config['train']['lambda2']
+    # Confirm learner cost and deployment cost got modified correctly
+    print(f"Using learning cost: {config['experiment']['mile_hyperparams']['learning_cost']}")
+    print(f"Using deployment cost: {config['experiment']['mile_hyperparams']['deployment_cost']}")
 
     if config['experiment']['mode'] == 'offline':
         offline_training(config)

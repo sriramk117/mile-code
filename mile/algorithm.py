@@ -23,6 +23,7 @@ from mile.computational_model import computational_intervention_model, sum_indep
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 rand = np.random.randint(0, 1000)
 
+DAGGER = False
 
 def generate_rollout(agent: Union[SACPolicy, policies.ActorCriticPolicy, QNetwork], 
                     env: gym.Env, 
@@ -148,6 +149,8 @@ def mile_cont_loss_fn(intervention_prob: torch.Tensor,
     - ground_truth_intervention: (batch_size,)
     '''
     discrete_loss = mile_disc_loss_fn(intervention_prob, ground_truth_intervention, reduction=reduction)
+    if DAGGER:
+        discrete_loss = discrete_loss * 0.0
     intervention_indices = torch.logical_and(ground_truth_intervention == 1, intervention_prob[:,-1] > 0.0)
     if intervention_indices.sum() == 0:
         continuous_loss = torch.tensor(0.0).to(device)
@@ -184,6 +187,7 @@ class InterventionTrainer:
         self.lr = lr
         self.lambda1 = lambda1
         self.lambda2 = lambda2
+        print(f"Using lambda1: {self.lambda1}, lambda2: {self.lambda2}")
         self.batch_size = batch_size
         self.num_epochs = num_epochs
         self.optimizer = optim.Adam(list(policy.parameters()) + list(mental_model.parameters()), lr=lr)
@@ -198,7 +202,7 @@ class InterventionTrainer:
         if self.env_name not in COST_LOOKUP:
             raise ValueError(f'Cost lookup for {self.env_name} is not available, please add it to COST_LOOKUP')
         self.intervention_cost = cost
-        self.intervention_scale = config['experiment']['mile_hyperparams']['cdf_scale']
+        self.intervention_scale = config['experiment']['mile_hyperparams']['learner_cdf_scale']
 
         self.score_window = deque(maxlen=100)
         self.init_policy = deepcopy(self.policy)
