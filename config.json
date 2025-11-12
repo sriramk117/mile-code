@@ -34,7 +34,7 @@
         "mile_hyperparams": {
             "deployment_cost": 75.0,
             "learning_cost": 75.0,
-            "lambda1": 1.0,
+            "lambda1": 10.0,
             "lambda2": 1.0,
             "deployment_cdf_scale": 175.0,
             "learner_cdf_scale": 175.0,
