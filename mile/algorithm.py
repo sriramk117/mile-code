@@ -23,8 +23,6 @@ from mile.computational_model import computational_intervention_model, sum_indep
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 rand = np.random.randint(0, 1000)
 
-DAGGER = False
-
 def generate_rollout(agent: Union[SACPolicy, policies.ActorCriticPolicy, QNetwork], 
                     env: gym.Env, 
                     env_name: str,
@@ -139,7 +137,8 @@ def mile_cont_loss_fn(intervention_prob: torch.Tensor,
                       ground_truth_intervention: torch.Tensor, 
                       LAMBDA1: float=1.0,
                       LAMBDA2: float=1.0,
-                      reduction='mean'):
+                      reduction='mean',
+                      use_dagger=False):
     '''
     Inputs:
     - intervention_prob: (batch_size, 2)
@@ -149,7 +148,7 @@ def mile_cont_loss_fn(intervention_prob: torch.Tensor,
     - ground_truth_intervention: (batch_size,)
     '''
     discrete_loss = mile_disc_loss_fn(intervention_prob, ground_truth_intervention, reduction=reduction)
-    if DAGGER:
+    if use_dagger:
         discrete_loss = discrete_loss * 0.0
     intervention_indices = torch.logical_and(ground_truth_intervention == 1, intervention_prob[:,-1] > 0.0)
     if intervention_indices.sum() == 0:
@@ -161,6 +160,9 @@ def mile_cont_loss_fn(intervention_prob: torch.Tensor,
         dist = D.Normal(mu, log_std.exp())
         log_prob = sum_independent_dims(dist.log_prob(ground_truth_action))
         continuous_loss = -log_prob.mean()
+
+    continuous_loss = continuous_loss * 0.0
+    
     loss = LAMBDA1 * continuous_loss + LAMBDA2 * discrete_loss
 
     return loss, continuous_loss, discrete_loss
@@ -178,6 +180,7 @@ class InterventionTrainer:
                  num_epochs: int=10,
                  lambda1: float=1.0,
                  lambda2: float=1.0,
+                 use_dagger: bool=False,
                  ):
         self.policy = policy
         self.mental_model = mental_model
@@ -187,6 +190,8 @@ class InterventionTrainer:
         self.lr = lr
         self.lambda1 = lambda1
         self.lambda2 = lambda2
+        self.use_dagger = use_dagger
+        print(f"Using use_dagger: {self.use_dagger}")
         print(f"Using lambda1: {self.lambda1}, lambda2: {self.lambda2}")
         self.batch_size = batch_size
         self.num_epochs = num_epochs
@@ -237,7 +242,8 @@ class InterventionTrainer:
                                                                         ground_truth_action, 
                                                                         ground_truth_intervention,
                                                                         LAMBDA1=self.lambda1,
-                                                                        LAMBDA2=self.lambda2,)
+                                                                        LAMBDA2=self.lambda2,
+                                                                        use_dagger=self.use_dagger)
                 loss.backward()
                 self.optimizer.step()
                 
@@ -321,7 +327,8 @@ class InterventionTrainer:
                                                                         ground_truth_action, 
                                                                         ground_truth_intervention,
                                                                         LAMBDA1=self.lambda1,
-                                                                        LAMBDA2=self.lambda2,)
+                                                                        LAMBDA2=self.lambda2,
+                                                                        use_dagger=self.use_dagger)
                     total_loss += loss.item()
                     total_continuous_loss += continuous_loss.item()
                     total_discrete_loss += discrete_loss.item()

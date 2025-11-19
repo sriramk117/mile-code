@@ -224,7 +224,7 @@ def iterative_training(config):
     learner_cdf_scale = config['experiment']['mile_hyperparams']['learner_cdf_scale']
     lambda1 = config['experiment']['mile_hyperparams']['lambda1']
     lambda2 = config['experiment']['mile_hyperparams']['lambda2']
-    EXPERIMENT_NAME = f"lambda1={lambda1} lambda2={lambda2} ({num_rounds} rounds) " +'-'+timestamp
+    EXPERIMENT_NAME = f"cost_l={learning_cost} cost_d={deployment_cost} ({num_rounds} rounds) " +'-'+timestamp
     format_strs = ["stdout"]
     if config['experiment']['logging']['terminal_output_to_txt']:
         format_strs.append("log")
@@ -346,13 +346,17 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Intervention training')
     parser.add_argument('--config', type=str, default='config.json', help='Path to the config file')
     parser.add_argument('--learner_cost', type=float, default=None, help='Override learning cost from config file')
+    parser.add_argument('--learner_cdf_scale', type=float, default=None, help='Override learner cdf scale from config file')
     parser.add_argument('--deployment_cost', type=float, default=None, help='Override deployment cost from config file')
     parser.add_argument('--lambda1', type=float, default=None, help='Override lambda1 from config file') 
     parser.add_argument('--lambda2', type=float, default=None, help='Override lambda2 from config file')
+    parser.add_argument('--use_dagger', type=float, default=None, help='Override use_dagger boolean from config file')
     args = parser.parse_args()
     config = read_config(args.config)
     if args.learner_cost is not None:
         config['experiment']['mile_hyperparams']['learning_cost'] = args.learner_cost
+    if args.learner_cdf_scale is not None:
+        config['experiment']['mile_hyperparams']['learner_cdf_scale'] = args.learner_cdf_scale
     if args.deployment_cost is not None:
         config['experiment']['mile_hyperparams']['deployment_cost'] = args.deployment_cost
     if config['experiment']['save']['enabled']:
@@ -363,6 +367,10 @@ if __name__ == "__main__":
     if args.lambda2 is not None:
         config['train']['lambda2'] = args.lambda2
         config['experiment']['mile_hyperparams']['lambda2'] = config['train']['lambda2']
+    if args.use_dagger is not None:
+        print(f"Overriding use_dagger to: {args.use_dagger}")
+        config['train']['use_dagger'] = args.use_dagger
+        config['experiment']['mile_hyperparams']['use_dagger'] = config['train']['use_dagger']
     # Confirm learner cost and deployment cost got modified correctly
     print(f"Using learning cost: {config['experiment']['mile_hyperparams']['learning_cost']}")
     print(f"Using deployment cost: {config['experiment']['mile_hyperparams']['deployment_cost']}")

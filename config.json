@@ -4,7 +4,8 @@
         "batch_size": 1024,
         "lr": 0.0001,
         "lambda1": 1.0,
-        "lambda2": 1.0
+        "lambda2": 1.0,
+        "use_dagger": 0
     },
     "experiment": {
         "name": "mile-different-costs",
@@ -34,10 +35,11 @@
         "mile_hyperparams": {
             "deployment_cost": 75.0,
             "learning_cost": 75.0,
-            "lambda1": 10.0,
+            "lambda1": 1.0,
             "lambda2": 1.0,
             "deployment_cdf_scale": 175.0,
             "learner_cdf_scale": 175.0,
+            "use_dagger": 0,
             "env_name": "peg-insert-side-v3"
         },
         "env_name": "peg-insert-side-v3",
@@ -49,7 +51,7 @@
         "intervention_policy_path": "./trained_models/expert_policy",
         "use_warm_start": true, 
         "warm_start_path": "./trained_models/warm_started_mental_model",
-        "num_rounds": 3,
+        "num_rounds": 20,
         "episodes_per_round": 1,
         "include_offline_dataset": false,
         "offline_dataset_path": "path_to_initial_offline_demonstration_dataset"
