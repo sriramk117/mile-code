@@ -160,8 +160,6 @@ def mile_cont_loss_fn(intervention_prob: torch.Tensor,
         dist = D.Normal(mu, log_std.exp())
         log_prob = sum_independent_dims(dist.log_prob(ground_truth_action))
         continuous_loss = -log_prob.mean()
-
-    continuous_loss = continuous_loss * 0.0
     
     loss = LAMBDA1 * continuous_loss + LAMBDA2 * discrete_loss
 
