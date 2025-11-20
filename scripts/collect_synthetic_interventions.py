@@ -3,6 +3,9 @@ import pickle
 import argparse
 import time
 from typing import Any, Callable, List, Mapping, Optional, Sequence, Tuple, Union
+import wandb
+import tempfile
+import datetime
 
 import gymnasium as gym
 from gymnasium.wrappers import FrameStackObservation
@@ -20,9 +23,13 @@ from stable_baselines3.dqn.policies import QNetwork
 from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common import policies
 from stable_baselines3.common.distributions import TanhBijector
+import stable_baselines3.common.logger as sb_logger
+
+from imitation.util import util
+from imitation.util.logger import HierarchicalLogger, _build_output_formats
 
 from mile.computational_model import computational_intervention_model, COST_LOOKUP
-
+from mile.utils import read_config, Logger, log_to_file
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")   
 
@@ -155,16 +162,48 @@ def collect_synthetic_data(env:gym.Env,
         print(f"Min Value Diff: {min_value_diff}, Max Value Diff: {max_value_diff}")
     return dataset, np.mean(scores), np.mean(successes), np.mean(intervention_rates), inside_cdf_terms
 
+def init_logging(config):
+    # Get current timestamp
+    now = datetime.datetime.now()
+    timestamp = now.strftime("%Y-%m-%d-%H-%M-%S-%f")
+    
+    # Initialize logging formats
+    format_strs = ["stdout"]
+    run = None
+    if config['experiment']['logging']['terminal_output_to_txt']:
+        format_strs.append("log")
+    if config['experiment']['logging']['log_tb']:
+        format_strs.append("tensorboard")
+    if config['experiment']['logging']['log_wandb']:
+        format_strs.append("wandb")
+        EXPERIMENT_NAME = 'rollout policy = expert'
+        run = wandb.init(project=config['experiment']['name'], config=config['experiment']['mile_hyperparams'], name=EXPERIMENT_NAME)
+    
+    # Create logging folder
+    tempdir = util.parse_path(tempfile.gettempdir())
+    folder = tempdir / timestamp
+    output_formats = _build_output_formats(folder, format_strs)
+    
+    # Create hierarchical logger
+    custom_logger = sb_logger.Logger(str(folder), list(output_formats))
+    hier_format_strs = [f for f in format_strs if (f != "wandb" and f != "tensorboard")]
+    hier_logger = HierarchicalLogger(custom_logger, hier_format_strs)
 
-def main(args, 
+    logger = Logger(hier_logger)
+
+    return logger, run
+
+
+def main(config, 
          rollout_policy:Union[SACPolicy, policies.ActorCriticPolicy, QNetwork], 
          intervention_policy:Union[SACPolicy, policies.ActorCriticPolicy, QNetwork], 
-         mental_model:Union[policies.ActorCriticPolicy, QNetwork]):
-    env_name = args.env_name
-    n_episodes = args.n_episodes
+         mental_model:Union[SACPolicy, policies.ActorCriticPolicy, QNetwork],
+         save_path:str):
+    env_name = config['experiment']['env_name']
+    n_episodes = config['experiment']['episodes_per_round']
     
     if env_name+'-goal-observable' in ALL_V3_ENVIRONMENTS_GOAL_OBSERVABLE:
-        assert isinstance(mental_model, policies.ActorCriticPolicy), 'Mental model must be continuous for this environment'
+        # assert isinstance(mental_model, policies.ActorCriticPolicy), 'Mental model must be continuous for this environment'
         env = ALL_V3_ENVIRONMENTS_GOAL_OBSERVABLE[env_name+'-goal-observable']()
         env._freeze_rand_vec = False
         env = FrameStackObservation(env, 4)
@@ -178,46 +217,57 @@ def main(args,
     cost = COST_LOOKUP[env_name][0]
     cdf_scale = COST_LOOKUP[env_name][1]
 
-    rollout_policy = rollout_policy.load(args.rollout_policy)
-    intervention_policy = intervention_policy.load(args.intervention_policy)
-    mental_model = mental_model.load(args.mental_model)
+    rollout_policy = rollout_policy.load(config['experiment']['policy_path'])
+    intervention_policy = intervention_policy.load(config['experiment']['intervention_policy_path'])
+    mental_model = mental_model.load(config['experiment']['gt_mental_model_path'])
     env = Monitor(env)
+    
+    # Initialize logging
+    logger, run = init_logging(config)
 
     # methods = ['Initial Policy', 'Initial Policy + Intervention', 'Mental Model Rollouts']
     methods = ['softmax']
     for method in methods:
-        dataset, mean_score, mean_success = collect_synthetic_data(env=env,
+        dataset, mean_score, mean_success_rate, mean_intervention_rate, inside_cdf_terms = collect_synthetic_data(env=env,
                                         n_episodes=n_episodes,
                                         cost=cost,
                                         cdf_scale=cdf_scale,
                                         rollout_policy=rollout_policy,
                                         intervention_policy=intervention_policy,
                                         mental_model=mental_model)
+        
+        # Log distribution of intervention probabilities
+        intervention_probs = dataset['intervention_prob']
+        histogram = logger.log_intervention_probs(intervention_probs, title=f"Distribution of Intervention Probabilities")
+        if config['experiment']['logging']['log_wandb']:
+            run.log({"intervention_probs": histogram}) 
+        
         if method == 'softmax':
             print('\tDataset size: {}'.format(len(dataset['state'])))
             print('\tPercentage of no-intervention: {}'.format(len(np.where(np.array(dataset['intervention'])==0)[0])/len(dataset['intervention'])))
             print('\tNumber of no-intervention: {}'.format(len(np.where(np.array(dataset['intervention'])==0)[0])))
             if args.save_path:
+                print(f'\tSaving dataset to {args.save_path}')
                 with open(args.save_path, 'wb') as f:
                     pickle.dump(dataset, f)
 
         # Mean success will be 0 if it is not set in the environment settings. #
         print(f'\tAverage score: {mean_score}')
-        print(f'\tSuccess rate: {mean_success}')
+        print(f'\tSuccess rate: {mean_success_rate}')
+        print(f'\tIntervention rate: {mean_intervention_rate}')
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--env_name', type=str, default='peg-insert-side-v2')
-    parser.add_argument('--n_episodes', type=int, default=20)
-    parser.add_argument('--rollout_policy', type=str, default='./initial_policy', help='Path to the rollout policy')
-    parser.add_argument('--intervention_policy', type=str, default='./expert_policy', help='Path to the expert policy')
-    parser.add_argument('--mental_model', type=str, default='./gt_mental_model', help='Path to the trained mental model')
+    parser.add_argument('--config', type=str, default='config.json', help='Path to the config file')
     parser.add_argument('--save_path', type=str, default='./intervention_dataset.pkl', help='Path to save the dataset')
     args = parser.parse_args()
 
-    ## Change policy types if you have different pretrained policies. ##
-    rollout_policy = SACPolicy.load(args.rollout_policy)
-    intervention_policy = SACPolicy.load(args.intervention_policy)
-    mental_model = policies.ActorCriticPolicy.load(args.mental_model)
+    config = read_config(args.config)
+    save_path = args.save_path
 
-    main(args, rollout_policy, intervention_policy, mental_model)
+    # Fetch and load policies from the config
+    rollout_policy = SACPolicy.load(config['experiment']['policy_path'])
+    intervention_policy = SACPolicy.load(config['experiment']['intervention_policy_path'])
+    mental_model = SACPolicy.load(config['experiment']['gt_mental_model_path'])
+
+    main(config, rollout_policy, intervention_policy, mental_model, save_path)

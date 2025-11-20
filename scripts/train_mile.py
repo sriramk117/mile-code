@@ -329,8 +329,6 @@ def iterative_training(config):
             run.log({"intervention_probs_" + f"round_{round}": histogram})
             # histogram_inside_cdf = logger.log_intervention_probs(inside_cdf_terms_per_round[round], title=f"Inside CDF Terms for Round {round}")
             # run.log({"inside_cdf_terms_" + f"round_{round}": histogram_inside_cdf})
-    print(len(intervention_probs_per_round))
-    print("Logging intervention probabilities per round...")
 
     # Log best intervention rate and best success rate achieved
     print(f"Learning cost: {learning_cost}")
